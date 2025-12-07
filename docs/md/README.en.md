@@ -127,6 +127,7 @@ The first launch creates a `config.json` file. Edit it directly, then use the tr
     "strikethrough_to_del": true,
   },
   "move_cursor_to_end": true,
+  "Keep_original_formula": false,
   "language": "zh"
 }
 ```
@@ -146,6 +147,7 @@ Key fields:
 - `html_formatting` — options for formatting HTML rich text before conversion.
   - `strikethrough_to_del` — convert strikethrough ~~ to `<del>` tags for proper rendering.
 - `move_cursor_to_end` — move the caret to the end of the inserted result.
+- `Keep_original_formula` — keep original math formulas (in LaTeX code form).
 - `language` — UI language, `en` or `zh`.
 
 ---
@@ -158,6 +160,7 @@ Key fields:
 - Enable or disable Excel-specific features and formatting preservation.
 - Toggle keeping generated DOCX files.
 - HTML Formatting: toggle conversion of strikethrough ~~ to `<del>` tags for proper rendering.
+- Keep_original_formula: Whether to preserve the original mathematical formula in its LaTeX code form.
 - Open save directory, view logs, edit configuration, or reload hotkeys.
 - Check for updates and view installed version.
 - Quit PasteMD.
@@ -176,13 +179,14 @@ python main.py
 Packaged build (PyInstaller):
 
 ```bash
-pyinstaller --clean -F -w -n PasteMD ^
-  --icon assets\\icons\\logo.ico ^
-  --add-data "assets\\icons;assets\\icons" ^
-  --add-data "pastemd\\i18n\\locales;pastemd\\i18n\\locales" ^
-  --hidden-import plyer.platforms.win.notification ^
-  --hidden-import pastemd.i18n.locales.zh ^
-  --hidden-import pastemd.i18n.locales.en ^
+pyinstaller --clean -F -w -n PasteMD
+  --icon assets\icons\logo.ico
+  --add-data "assets\icons;assets\icons"
+  --add-data "pastemd\i18n\locales;pastemd\i18n\locales"
+  --add-data "pastemd\lua;pastemd\lua"
+  --hidden-import plyer.platforms.win.notification
+  --hidden-import pastemd.i18n.locales.zh
+  --hidden-import pastemd.i18n.locales.en
   main.py
 ```
 

@@ -137,6 +137,7 @@
     "strikethrough_to_del": true,
   },
   "move_cursor_to_end": true,
+  "Keep_original_formula": false,
   "language": "zh"
 }
 ```
@@ -157,6 +158,7 @@
   * **`strikethrough_to_del`**： - 是否将删除线 ~~ 转换为 `<del>` 标签，使得转换正确（默认 true）。
 * **`html_disable_first_para_indent`**： - HTML 富文本转换时是否禁用第一段的特殊格式，统一为正文样式（默认 true）。
 * **`move_cursor_to_end`**：**✨ 新功能** - 插入内容后是否将光标移动到插入内容的末尾（默认 true）。
+* **`Keep_original_formula`**：**✨ 新功能** - 是否保留原始数学公式（LaTeX 代码形式）。
 * `language`：界面语言，`zh` 中文，`en` 英文。
 
 修改后可在托盘菜单选择 **“重载配置/热键”** 立即生效。
@@ -171,6 +173,7 @@
 * 无应用时自动打开：当未检测到 Word/Excel 时是否自动创建并用默认应用打开。
 * 插入后移动光标到末尾：插入内容后是否将光标移动到插入内容的末尾。
 * HTML 格式化：切换 **删除线 ~~ 转换为 `<del>`** 等 HTML 自动整理，使得可以正确转换（防止部分网页没有解析这些格式，导致从网页复制粘贴无法显示这些格式）。
+* 实验性功能：启用/禁用 **保留原始数学公式** 等实验性功能。
 * 设置热键：通过图形界面录制并保存新的全局热键（即时生效）。
 * 保留生成文件：勾选后生成的 DOCX 会保存在 `save_dir`。
 * 打开保存目录、查看日志、编辑配置、重载配置/热键。
@@ -195,6 +198,7 @@ pyinstaller --clean -F -w -n PasteMD
   --icon assets\icons\logo.ico
   --add-data "assets\icons;assets\icons"
   --add-data "pastemd\i18n\locales;pastemd\i18n\locales"
+  --add-data "pastemd\lua;pastemd\lua"
   --hidden-import plyer.platforms.win.notification
   --hidden-import pastemd.i18n.locales.zh
   --hidden-import pastemd.i18n.locales.en
