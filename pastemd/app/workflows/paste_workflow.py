@@ -61,7 +61,7 @@ class PasteWorkflow:
             should_use_html = False
             if is_html:
                 try:
-                    html_text = get_clipboard_html()
+                    html_text = get_clipboard_html(config)
                     is_plain = is_plain_html_fragment(html_text)
                     log(f"Clipboard contains HTML (plain_fragment={is_plain})")
                     if not is_plain:
@@ -188,7 +188,7 @@ class PasteWorkflow:
         try:
             # 1. 获取并清理 HTML 内容
             if html_text is None:
-                html_text = get_clipboard_html()
+                html_text = get_clipboard_html(config)
             log(f"Retrieved HTML from clipboard, length: {len(html_text)}")
             
             # 2. 生成 DOCX 字节流
@@ -503,7 +503,7 @@ class PasteWorkflow:
         """生成 DOCX 文件（来源 HTML）并用默认应用打开"""
         try:
             if html_text is None:
-                html_text = get_clipboard_html()
+                html_text = get_clipboard_html(config)
             log(f"Retrieved HTML from clipboard for auto-open, length: {len(html_text)}")
 
             self._ensure_pandoc_integration()

@@ -75,7 +75,8 @@ class TrayMenuManager:
             )
         
         language_menu = self._build_language_menu()
-        
+        html_formatting_menu = self._build_html_formatting_menu()
+
         return pystray.Menu(
             pystray.MenuItem(
                 t("tray.menu.hotkey_display", hotkey=app_state.config['hotkey']),
@@ -103,6 +104,7 @@ class TrayMenuManager:
                 self._on_toggle_move_cursor,
                 checked=lambda item: config.get("move_cursor_to_end", True)
             ),
+            html_formatting_menu,
             pystray.Menu.SEPARATOR,
             pystray.MenuItem(t("tray.menu.set_hotkey"), self._on_set_hotkey),
             pystray.Menu.SEPARATOR,
@@ -299,7 +301,42 @@ class TrayMenuManager:
         except Exception as e:
             log(f"Failed to reload config: {e}")
             self.notification_manager.notify("PasteMD", t("tray.error.config_reload_failed"), ok=False)
-    
+
+    def _build_html_formatting_menu(self) -> pystray.MenuItem:
+        """构建 HTML 格式化子菜单"""
+        return pystray.MenuItem(
+            t("tray.menu.html_formatting"),
+            pystray.Menu(
+                pystray.MenuItem(
+                    t("tray.menu.strikethrough_to_del"),
+                    self._on_toggle_html_strikethrough,
+                    checked=lambda item: self._get_html_formatting_option("strikethrough_to_del", True),
+                ),
+            ),
+        )
+
+    def _get_html_formatting_option(self, key: str, default: bool) -> bool:
+        options = app_state.config.get("html_formatting", {})
+        if isinstance(options, dict):
+            return bool(options.get(key, default))
+        return default
+
+    def _on_toggle_html_strikethrough(self, icon, item):
+        """切换删除线转 <del> 的 HTML 格式化配置"""
+        current = self._get_html_formatting_option("strikethrough_to_del", True)
+        if not isinstance(app_state.config.get("html_formatting"), dict):
+            app_state.config["html_formatting"] = {}
+        app_state.config["html_formatting"]["strikethrough_to_del"] = not current
+        self._save_config()
+        icon.menu = self.build_menu()
+
+        status = (
+            t("tray.status.html_strike_on")
+            if app_state.config["html_formatting"].get("strikethrough_to_del", True)
+            else t("tray.status.html_strike_off")
+        )
+        self.notification_manager.notify("PasteMD", status, ok=True)
+
     def _build_language_menu(self) -> pystray.MenuItem:
         """构建语言选择菜单"""
         language_items = []

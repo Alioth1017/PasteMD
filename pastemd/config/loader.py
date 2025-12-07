@@ -33,7 +33,16 @@ class ConfigLoader:
                 config = DEFAULT_CONFIG.copy()
                 log(f"Load config error: {e}")
                 raise ConfigError(f"Failed to load config: {e}")
-        
+
+        # 深度合并 HTML 格式化配置，便于向后兼容
+        default_html_formatting = DEFAULT_CONFIG.get("html_formatting", {})
+        user_html_formatting = config.get("html_formatting", {})
+        if isinstance(user_html_formatting, dict):
+            merged_html_formatting = {**default_html_formatting, **user_html_formatting}
+        else:
+            merged_html_formatting = default_html_formatting.copy()
+        config["html_formatting"] = merged_html_formatting
+
         # 展开环境变量
         config["save_dir"] = os.path.expandvars(config["save_dir"])
         
