@@ -17,6 +17,12 @@
   <a href="../../README.md">简体中文</a> 
 </p>
 
+> When writing papers or reports, do formulas copied from AI tools (like ChatGPT or DeepSeek) turn into garbled text in Word? Do Markdown tables fail to paste correctly into Excel? **PasteMD was built specifically to solve these problems.**
+> 
+> <img src="https://github.com/user-attachments/assets/edf4a953-e18f-4a5b-99bf-7ee559f77f4a"
+     alt="截图"
+     width="100">
+
 PasteMD is a lightweight tray app that watches your clipboard, converts Markdown or HTML-rich text to DOCX through Pandoc, and pastes the result straight into the caret position of Word or WPS. It understands Markdown tables and can paste them directly into Excel with formatting preserved, and it recognizes HTML rich text (except math) copied from web pages.
 
 ---
@@ -188,6 +194,10 @@ The compiled executable will be placed in `dist/PasteMD.exe`.
 
 Every star helps — thank you for sharing PasteMD with more users.
 
+<img src="https://github.com/user-attachments/assets/44ccec5c-a7d2-4153-b57d-0b7255fffeaa"
+     alt="截图"
+     width="150">
+
 [![Star History Chart](https://api.star-history.com/svg?repos=RICHQAQ/PasteMD&type=Date)](https://star-history.com/#RICHQAQ/PasteMD&Date)
 
 ---
@@ -195,6 +205,10 @@ Every star helps — thank you for sharing PasteMD with more users.
 ## ☕ Support & Donation
 
 If PasteMD saves you time, consider buying the author a coffee — your support helps prioritize fixes, enhancements, and new integrations.
+
+<img src="https://github.com/user-attachments/assets/5b4cf694-74e3-4b10-a1f9-2b92af13a525"
+     alt="截图"
+     width="150">
 
 | Alipay | WeChat |
 | --- | --- |

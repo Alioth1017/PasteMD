@@ -17,6 +17,12 @@
   <a href="README.md">简体中文</a>
 </p>
 
+> 在写论文或报告时，从 ChatGPT/deepseek等ai网站中复制出来的公式在 Word 里总是乱码？md表格复制到 Excel 总是不行？**PasteMD 就是为了解决这个问题而生的，嘿嘿**
+> 
+> <img src="https://github.com/user-attachments/assets/edf4a953-e18f-4a5b-99bf-7ee559f77f4a"
+     alt="截图"
+     width="100">
+
 一个常驻托盘的小工具：
 从 **剪贴板读取 Markdown**，调用 **Pandoc** 转换为 DOCX，并自动插入到 **Word/WPS** 光标位置。
 
@@ -201,7 +207,11 @@ pyinstaller --clean -F -w -n PasteMD
 
 ## ⭐ Star 
 
-感谢每一位 Star 的帮助，欢迎分享给更多小伙伴～
+感谢每一位 Star 的帮助，欢迎分享给更多小伙伴~，想要达成1k star🌟，我会努力的喵
+
+<img src="https://github.com/user-attachments/assets/44ccec5c-a7d2-4153-b57d-0b7255fffeaa"
+     alt="截图"
+     width="150">
 
 [![Star History Chart](https://api.star-history.com/svg?repos=RICHQAQ/PasteMD&type=Date)](https://star-history.com/#RICHQAQ/PasteMD&Date)
 
@@ -211,6 +221,10 @@ pyinstaller --clean -F -w -n PasteMD
 
 希望这个小工具对你有帮助，欢迎请作者👻喝杯咖啡☕～你的支持会让我更有动力持续修复问题、完善功能、适配更多场景并保持长期维护。感谢每一份支持！
 
+<img src="https://github.com/user-attachments/assets/5b4cf694-74e3-4b10-a1f9-2b92af13a525"
+     alt="截图"
+     width="150">
+     
 | 支付宝 | 微信 |
 | --- | --- |
 | ![支付宝打赏](docs/pay/Alipay.jpg) | ![微信打赏](docs/pay/Weixinpay.png) |
