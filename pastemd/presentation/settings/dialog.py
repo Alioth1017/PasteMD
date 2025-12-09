@@ -80,6 +80,7 @@ class SettingsDialog:
         self._create_general_tab()
         self._create_conversion_tab()
         self._create_advanced_tab()
+        self._create_experimental_tab()
         
         # 底部按钮栏
         button_frame = ttk.Frame(self.root, padding="10")
@@ -189,9 +190,6 @@ class SettingsDialog:
         
         self.html_indent_var = tk.BooleanVar(value=self.current_config.get("html_disable_first_para_indent", True))
         ttk.Checkbutton(frame, text=t("settings.conversion.html_indent"), variable=self.html_indent_var).grid(row=5, column=0, columnspan=3, sticky=tk.W, pady=2)
-        
-        self.keep_formula_var = tk.BooleanVar(value=self.current_config.get("Keep_original_formula", False))
-        ttk.Checkbutton(frame, text=t("settings.conversion.keep_formula"), variable=self.keep_formula_var).grid(row=6, column=0, columnspan=3, sticky=tk.W, pady=2)
 
     def _create_advanced_tab(self):
         """创建高级设置选项卡"""
@@ -204,6 +202,14 @@ class SettingsDialog:
         
         self.excel_format_var = tk.BooleanVar(value=self.current_config.get("excel_keep_format", True))
         ttk.Checkbutton(frame, text=t("settings.advanced.excel_format"), variable=self.excel_format_var).grid(row=1, column=0, sticky=tk.W, pady=5)
+
+    def _create_experimental_tab(self):
+        """创建实验性功能选项卡"""
+        frame = ttk.Frame(self.notebook, padding=10)
+        self.notebook.add(frame, text=t("settings.tab.experimental"))
+        
+        self.keep_formula_var = tk.BooleanVar(value=self.current_config.get("Keep_original_formula", False))
+        ttk.Checkbutton(frame, text=t("settings.conversion.keep_formula"), variable=self.keep_formula_var).grid(row=0, column=0, sticky=tk.W, pady=5)
 
     def _browse_save_dir(self):
         path = filedialog.askdirectory(initialdir=os.path.expandvars(self.save_dir_var.get()))

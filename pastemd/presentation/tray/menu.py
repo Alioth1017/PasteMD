@@ -72,9 +72,7 @@ class TrayMenuManager:
                 )
             )
 
-        language_menu = self._build_language_menu()
         html_formatting_menu = self._build_html_formatting_menu()
-        utility_menu = self._build_utility_menu()
 
         return pystray.Menu(
             pystray.MenuItem(
@@ -104,7 +102,6 @@ class TrayMenuManager:
                 checked=lambda item: config.get("move_cursor_to_end", True)
             ),
             html_formatting_menu,
-            utility_menu,
             pystray.Menu.SEPARATOR,
             pystray.MenuItem(t("tray.menu.set_hotkey"), self._on_set_hotkey),
             pystray.Menu.SEPARATOR,
@@ -118,11 +115,8 @@ class TrayMenuManager:
             pystray.MenuItem(t("tray.menu.open_log"), self._on_open_log),
             pystray.Menu.SEPARATOR,
             pystray.MenuItem(t("settings.dialog.title"), self._on_open_settings),
-            pystray.MenuItem(t("tray.menu.edit_config"), self._on_edit_config),
-            pystray.MenuItem(t("tray.menu.reload_config"), self._on_reload),
             pystray.Menu.SEPARATOR,
             *version_menu_items,
-            language_menu,
             pystray.MenuItem(
                 t("tray.menu.about"),
                 self._on_open_about_page
@@ -130,28 +124,6 @@ class TrayMenuManager:
             pystray.MenuItem(t("tray.menu.quit"), self._on_quit)
         )
 
-    def _build_utility_menu(self) -> pystray.MenuItem:
-        """构建实用性功能（实验性）多选菜单"""
-        return pystray.MenuItem(
-            t("tray.menu.utility_features"),
-            pystray.Menu(
-                pystray.MenuItem(
-                    t("tray.menu.keep_original_formula"),
-                    self._on_toggle_keep_original_formula,
-                    checked=lambda item: app_state.config.get("Keep_original_formula", False)
-                ),
-            )
-        )
-
-    def _on_toggle_keep_original_formula(self, icon, item):
-        """切换保留原始数学公式实验性功能"""
-        current = app_state.config.get("Keep_original_formula", False)
-        app_state.config["Keep_original_formula"] = not current
-        self._save_config()
-        icon.menu = self.build_menu()
-        status = t("tray.status.keep_original_formula_on") if app_state.config["Keep_original_formula"] else t("tray.status.keep_original_formula_off")
-        self.notification_manager.notify("PasteMD", status, ok=True)
-    
     # 菜单回调函数
     def _on_toggle_enabled(self, icon, item):
         """切换热键启用状态"""
@@ -329,28 +301,6 @@ class TrayMenuManager:
         else:
             show_dialog_on_main()
 
-    def _on_edit_config(self, icon, item):
-        """编辑配置文件"""
-        config_path = get_config_path()
-        if not os.path.exists(config_path):
-            self._save_config()  # 创建默认配置文件
-        os.startfile(config_path)
-    
-    def _on_reload(self, icon, item):
-        """重载配置和热键"""
-        try:
-            app_state.config = self.config_loader.load()
-            app_state.hotkey_str = app_state.config.get("hotkey", "<ctrl>+b")
-            set_language(app_state.config.get("language", "zh"))
-            
-            if self.restart_hotkey_callback:
-                self.restart_hotkey_callback()
-            icon.menu = self.build_menu()
-            self.notification_manager.notify("PasteMD", t("tray.status.config_reloaded"), ok=True)
-        except Exception as e:
-            log(f"Failed to reload config: {e}")
-            self.notification_manager.notify("PasteMD", t("tray.error.config_reload_failed"), ok=False)
-
     def _build_html_formatting_menu(self) -> pystray.MenuItem:
         """构建 HTML 格式化子菜单"""
         return pystray.MenuItem(
@@ -385,49 +335,6 @@ class TrayMenuManager:
             else t("tray.status.html_strike_off")
         )
         self.notification_manager.notify("PasteMD", status, ok=True)
-
-    def _build_language_menu(self) -> pystray.MenuItem:
-        """构建语言选择菜单"""
-        language_items = []
-        for code, label in iter_languages():
-            language_items.append(
-                pystray.MenuItem(
-                    label,
-                    self._create_language_action(code),
-                    checked=self._create_language_checked(code)
-                )
-            )
-        return pystray.MenuItem(
-            t("tray.menu.language"),
-            pystray.Menu(*language_items)
-        )
-    
-    def _create_language_action(self, language_code: str):
-        """Wrap handler so pystray sees only (icon, item)."""
-        def action(icon, item):
-            self._on_change_language(icon, language_code)
-        return action
-    
-    def _create_language_checked(self, language_code: str):
-        """Wrap checked callback to avoid leaking extra args."""
-        def is_checked(item):
-            return get_language() == language_code
-        return is_checked
-    
-    def _on_change_language(self, icon, language_code: str):
-        """切换界面语言"""
-        current = app_state.config.get("language", "zh")
-        if current == language_code:
-            return
-        app_state.config["language"] = language_code
-        set_language(language_code)
-        self._save_config()
-        icon.menu = self.build_menu()
-        self.notification_manager.notify(
-            "PasteMD",
-            t("tray.status.language_changed", language=get_language_label(language_code)),
-            ok=True
-        )
     
     def _on_check_update(self, icon, item):
         """检查更新"""

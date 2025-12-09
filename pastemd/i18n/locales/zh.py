@@ -56,6 +56,7 @@ TRANSLATIONS = {
     "settings.tab.general": "常规",
     "settings.tab.conversion": "转换",
     "settings.tab.advanced": "高级",
+    "settings.tab.experimental": "实验性功能",
     "settings.general.language": "界面语言",
     "settings.general.save_dir": "文件保存目录",
     "settings.general.browse": "浏览...",
