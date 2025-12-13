@@ -66,6 +66,8 @@
     "settings.conversion.md_indent": "Markdown：禁用标题后首段特殊格式",
     "settings.conversion.html_indent": "HTML：禁用标题后首段特殊格式",
     "settings.conversion.keep_formula": "保留原始数学公式 (不转换)",
+    "settings.conversion.enable_latex_replacements": "自动修复不兼容的 LaTeX 语法",
+    "settings.conversion.latex_replacements_note": "（例如：将 {\\kern 10pt} 替换为 \\qquad）",
     "settings.advanced.excel_enable": "启用 Excel 智能粘贴",
     "settings.advanced.excel_format": "Excel 粘贴保留格式",
     "settings.buttons.save": "保存",

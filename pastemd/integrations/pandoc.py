@@ -10,6 +10,7 @@ from ..core.errors import PandocError
 from ..utils.logging import log
 
 LUA_KEEP_ORIGINAL_FORMULA = resource_path("pastemd/lua/keep-latex-math.lua")
+LUA_LATEX_REPLACEMENTS = resource_path("pastemd/lua/latex-replacements.lua")
 
 
 class PandocIntegration:
@@ -78,7 +79,7 @@ class PandocIntegration:
         # stdout 也是 bytes，自行按 UTF-8 解码
         return result.stdout.decode("utf-8", "ignore")
 
-    def convert_to_docx_bytes(self, md_text: str, reference_docx: Optional[str] = None, Keep_original_formula: bool = False) -> bytes:
+    def convert_to_docx_bytes(self, md_text: str, reference_docx: Optional[str] = None, Keep_original_formula: bool = False, enable_latex_replacements: bool = True) -> bytes:
         """
         用 stdin 喂入 Markdown，直接把 DOCX 从 stdout 读到内存（无任何输入文件写盘）
         """
@@ -89,6 +90,8 @@ class PandocIntegration:
             "-o", "-",
             "--highlight-style", "tango",
         ]
+        if enable_latex_replacements:
+            cmd += ["--lua-filter", LUA_LATEX_REPLACEMENTS]
         if Keep_original_formula:
             cmd += ["--lua-filter", LUA_KEEP_ORIGINAL_FORMULA]
         if reference_docx:
@@ -119,7 +122,7 @@ class PandocIntegration:
 
         return result.stdout
 
-    def convert_html_to_docx_bytes(self, html_text: str, reference_docx: Optional[str] = None, Keep_original_formula: bool = False) -> bytes:
+    def convert_html_to_docx_bytes(self, html_text: str, reference_docx: Optional[str] = None, Keep_original_formula: bool = False, enable_latex_replacements: bool = True) -> bytes:
         """
         用 stdin 喂入 HTML，直接把 DOCX 从 stdout 读到内存（无任何输入文件写盘）
         
@@ -135,7 +138,12 @@ class PandocIntegration:
         """
         if Keep_original_formula:
             md = self._convert_html_to_md(html_text)
-            return self.convert_to_docx_bytes(md, reference_docx, Keep_original_formula)
+            return self.convert_to_docx_bytes(
+                    md_text=md,
+                    reference_docx=reference_docx,
+                    Keep_original_formula=Keep_original_formula,
+                    enable_latex_replacements=enable_latex_replacements,
+                )
         
         cmd = [
             self.pandoc_path,
@@ -144,6 +152,8 @@ class PandocIntegration:
             "-o", "-",
             "--highlight-style", "tango",
         ]
+        if enable_latex_replacements:
+            cmd += ["--lua-filter", LUA_LATEX_REPLACEMENTS]
         if reference_docx:
             cmd += ["--reference-doc", reference_docx]
 

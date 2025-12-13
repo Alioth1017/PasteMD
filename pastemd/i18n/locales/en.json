@@ -66,6 +66,8 @@
     "settings.conversion.md_indent": "Markdown: disable special first-paragraph style after headings",
     "settings.conversion.html_indent": "HTML: disable special first-paragraph style after headings",
     "settings.conversion.keep_formula": "Keep original math formula (no conversion)",
+    "settings.conversion.enable_latex_replacements": "Auto-fix incompatible LaTeX syntax",
+    "settings.conversion.latex_replacements_note": "(e.g., replace {\\kern 10pt} with \\qquad)",
     "settings.advanced.excel_enable": "Enable Excel smart paste",
     "settings.advanced.excel_format": "Excel paste preserve formatting",
     "settings.buttons.save": "Save",

@@ -25,6 +25,7 @@ if os.path.exists(os.path.join(os.path.dirname(sys.executable), "pandoc", "pando
         "move_cursor_to_end": True,  # 插入后光标移动到插入内容的末尾
         "Keep_original_formula": False,  # 是否保留原始数学公式,不进行转换
         "language": "zh",  # UI 语言（默认简体中文）
+        "enable_latex_replacements": True,  # 是否启用 LaTeX 公式自动替换（处理不兼容语法）
     }
 else:
     DEFAULT_CONFIG = {
@@ -45,4 +46,5 @@ else:
         "move_cursor_to_end": True,  # 插入后光标移动到插入内容的末尾
         "Keep_original_formula": False,  # 是否保留原始数学公式,不进行转换
         "language": "zh",  # UI 语言（默认简体中文）
+        "enable_latex_replacements": True,  # 是否启用 LaTeX 公式自动替换（处理不兼容语法）
     }

@@ -196,7 +196,8 @@ class PasteWorkflow:
             docx_bytes = self.pandoc_integration.convert_html_to_docx_bytes(
                 html_text=html_text,
                 reference_docx=config.get("reference_docx"),
-                Keep_original_formula=config.get("Keep_original_formula", False)
+                Keep_original_formula=config.get("Keep_original_formula", False),
+                enable_latex_replacements=config.get("enable_latex_replacements", True)
             )
 
             # 3. 在内存中处理 DOCX 样式
@@ -289,7 +290,8 @@ class PasteWorkflow:
         docx_bytes = self.pandoc_integration.convert_to_docx_bytes(
             md_text=md_text,
             reference_docx=config.get("reference_docx"),
-            Keep_original_formula=config.get("Keep_original_formula", False)
+            Keep_original_formula=config.get("Keep_original_formula", False),
+            enable_latex_replacements=config.get("enable_latex_replacements", True)
         )
 
         # 3. 在内存中处理 DOCX 样式
@@ -337,7 +339,7 @@ class PasteWorkflow:
                 self.pandoc_integration = PandocIntegration(pandoc_path)
             except PandocError as e:
                 log(f"Failed to initialize PandocIntegration: {e}")
-                try: 
+                try:
                     self.pandoc_integration = PandocIntegration(DEFAULT_CONFIG.get("pandoc_path", "pandoc"))
                     app_state.config["pandoc_path"] = DEFAULT_CONFIG["pandoc_path"]
                     config_loader = ConfigLoader()
@@ -445,8 +447,8 @@ class PasteWorkflow:
             
             # 2. 处理LaTeX公式
             md_text = convert_latex_delimiters(md_text)
-            
-            # 2. 生成输出路径
+
+            # 3. 生成输出路径
             output_path = generate_output_path(
                 keep_file=True,  # 生成文件并打开时，默认保留文件
                 save_dir=config.get("save_dir", ""),
@@ -458,7 +460,8 @@ class PasteWorkflow:
             docx_bytes = self.pandoc_integration.convert_to_docx_bytes(
                 md_text=md_text,
                 reference_docx=config.get("reference_docx"),
-                Keep_original_formula=config.get("Keep_original_formula", False)
+                Keep_original_formula=config.get("Keep_original_formula", False),
+                enable_latex_replacements=config.get("enable_latex_replacements", True)
             )
 
             # 4. 在内存中处理 DOCX 样式
@@ -513,7 +516,8 @@ class PasteWorkflow:
             docx_bytes = self.pandoc_integration.convert_html_to_docx_bytes(
                 html_text=html_text,
                 reference_docx=config.get("reference_docx"),
-                Keep_original_formula=config.get("Keep_original_formula", False)
+                Keep_original_formula=config.get("Keep_original_formula", False),
+                enable_latex_replacements=config.get("enable_latex_replacements", True)
             )
 
             if config.get("html_disable_first_para_indent", True):

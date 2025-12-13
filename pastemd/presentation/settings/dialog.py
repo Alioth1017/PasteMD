@@ -259,6 +259,16 @@ class SettingsDialog:
         
         self.keep_formula_var = tk.BooleanVar(value=self.current_config.get("Keep_original_formula", False))
         ttk.Checkbutton(frame, text=t("settings.conversion.keep_formula"), variable=self.keep_formula_var).grid(row=0, column=0, sticky=tk.W, pady=5)
+        
+        # LaTeX 自动替换开关
+        self.enable_latex_replacements_var = tk.BooleanVar(value=self.current_config.get("enable_latex_replacements", True))
+        latex_check = ttk.Checkbutton(frame, text=t("settings.conversion.enable_latex_replacements"), variable=self.enable_latex_replacements_var)
+        latex_check.grid(row=1, column=0, sticky=tk.W, pady=5)
+        
+        # 说明文本（灰色小字）
+        note_text = t("settings.conversion.latex_replacements_note")
+        note_label = ttk.Label(frame, text=note_text, foreground="gray", font=("", 8))
+        note_label.grid(row=2, column=0, sticky=tk.W, padx=(20, 0), pady=(0, 5))
 
     def _browse_save_dir(self):
         """浏览保存目录"""
@@ -341,6 +351,7 @@ class SettingsDialog:
             new_config["md_disable_first_para_indent"] = self.md_indent_var.get()
             new_config["html_disable_first_para_indent"] = self.html_indent_var.get()
             new_config["Keep_original_formula"] = self.keep_formula_var.get()
+            new_config["enable_latex_replacements"] = self.enable_latex_replacements_var.get()
             
             new_config["enable_excel"] = self.excel_enable_var.get()
             new_config["excel_keep_format"] = self.excel_format_var.get()
