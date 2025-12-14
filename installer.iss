@@ -69,10 +69,10 @@ Type: filesandordirs; Name: "{app}\*"
 
 [Icons]
 ; 为快捷方式写入 AppUserModelID，并指定图标，确保通知归属/图标正确
-Name: "{group}\{#MyAppName}";       Filename: "{app}\{#MyAppExeName}"; \
+Name: "{autoprograms}\{#MyAppName}";       Filename: "{app}\{#MyAppExeName}"; \
     AppUserModelID: "{#MyAUMID}";   IconFilename: "{app}\icon.ico"
 
-Name: "{commondesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; \
+Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; \
     Tasks: desktopicon; AppUserModelID: "{#MyAUMID}"; IconFilename: "{app}\icon.ico"
 
 [Run]
