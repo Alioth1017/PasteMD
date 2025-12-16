@@ -4,9 +4,9 @@
 #define MyAppExeName "PasteMD.exe"
 ; AppUserModelID 用于 Win11 通知归属与图标
 #define MyAUMID        "RichQAQ.PasteMD"
-; Nuitka 构建目录
-#define BuildDir       "nuitka\\main.dist"
-; 如果是 onedir，改为发行目录：例如
+; Nuitka 构建目录 - 使用 __main__.dist 因为入口是 pastemd/__main__.py
+#define BuildDir       "nuitka\__main__.dist"
+; 如果使用其他构建工具，可以改为其他目录
 ; #define BuildDir     "dist\\PasteMD"
 
 ; ICO 源文件
