@@ -1,32 +1,86 @@
 """Main paste workflow - orchestrates the entire conversion and insertion process."""
 
+import sys
 import traceback
 import io
 import os
 from typing import Optional
 
-from ...utils.win32.detector import detect_active_app
-from ...utils.clipboard import get_clipboard_text, is_clipboard_empty, is_clipboard_html, get_clipboard_html
+# 条件导入 Windows 专用模块
+if sys.platform == 'win32':
+    from ...utils.win32.detector import detect_active_app
+    from ...utils.win32.memfile import EphemeralFile
+else:
+    # macOS/Linux: 使用 platform 模块的实现
+    from ...platforms import get_app_detector
+    _app_detector = get_app_detector()
+    detect_active_app = _app_detector.detect_active_app
+    # macOS 上使用临时文件代替 EphemeralFile
+    import tempfile
+    class EphemeralFile:
+        """macOS/Linux 临时文件实现"""
+        def __init__(self, suffix=".docx", dir_=None):
+            self.dir = dir_ or tempfile.gettempdir()
+            os.makedirs(self.dir, exist_ok=True)
+            self.file = tempfile.NamedTemporaryFile(suffix=suffix, dir=self.dir, delete=False)
+            self.path = self.file.name
+        
+        def write_bytes(self, data: bytes):
+            """写入字节数据到临时文件"""
+            if isinstance(data, str):
+                data = data.encode("utf-8")
+            self.file.write(data)
+            self.file.flush()
+        
+        def __enter__(self):
+            return self
+        
+        def __exit__(self, *args):
+            self.file.close()
+            try:
+                os.unlink(self.path)
+            except Exception:
+                pass
+
+from ...platforms import get_clipboard_handler
 from ...utils.latex import convert_latex_delimiters
 from ...utils.md_normalizer import normalize_markdown
 from ...domains.awakener import AppLauncher
 from ...integrations.pandoc import PandocIntegration
-from ...domains.document.word import WordInserter
-from ...domains.document.wps import WPSInserter
+
+# Windows 专用文档插入器
+if sys.platform == 'win32':
+    from ...domains.document.word import WordInserter
+    from ...domains.document.wps import WPSInserter
+    from ...domains.spreadsheet.excel import MSExcelInserter
+    from ...domains.spreadsheet.wps_excel import WPSExcelInserter
+else:
+    # macOS/Linux: 使用平台抽象层
+    from ...platforms import get_document_inserter_factory
+    _factory = get_document_inserter_factory()
+    WordInserter = lambda: _factory.get_word_inserter()
+    WPSInserter = lambda: _factory.get_word_inserter()  # WPS 在 macOS 上使用 Word 插入器
+    MSExcelInserter = lambda: _factory.get_excel_inserter()
+    WPSExcelInserter = lambda: _factory.get_excel_inserter()
+
 from ...domains.spreadsheet.parser import parse_markdown_table
-from ...domains.spreadsheet.excel import MSExcelInserter
-from ...domains.spreadsheet.wps_excel import WPSExcelInserter
 from ...domains.notification.manager import NotificationManager
 from ...utils.fs import generate_output_path
-from ...utils.logging import log
+from ...utils.app_logging import log
 from ...core.state import app_state
 from ...core.errors import ClipboardError, PandocError, InsertError
 from ...config.defaults import DEFAULT_CONFIG
 from ...config.loader import ConfigLoader
-from ...utils.win32.memfile import EphemeralFile
 from ...utils.docx_processor import DocxProcessor
 from ...utils.html_analyzer import is_plain_html_fragment
 from ...i18n import t
+
+# 获取平台剪贴板处理器
+_clipboard = get_clipboard_handler()
+get_clipboard_text = _clipboard.get_text
+get_clipboard_html = _clipboard.get_html
+is_clipboard_html = _clipboard.is_html_available
+is_clipboard_empty = _clipboard.is_empty
 
 
 class PasteWorkflow:
@@ -42,6 +96,7 @@ class PasteWorkflow:
     
     def execute(self) -> None:
         """执行完整的转换和插入流程"""
+        log("[WORKFLOW] ========== EXECUTE START ==========")
         try:
             # 1. 检查剪贴板
             if is_clipboard_empty():
@@ -50,6 +105,7 @@ class PasteWorkflow:
                     t("workflow.clipboard.empty"),
                     ok=False
                 )
+                log("[WORKFLOW] Clipboard is empty, returning")
                 return
             
             # 2. 获取剪贴板内容和配置
@@ -57,49 +113,90 @@ class PasteWorkflow:
             
             # 2.1 检测是否为 HTML 富文本，并尝试识别其结构
             is_html = is_clipboard_html()
+            log(f"[WORKFLOW] is_clipboard_html={is_html}")
             html_text = None
             should_use_html = False
+            fallback_to_markdown = False  # 标记是否应该降级到 Markdown
+            
             if is_html:
                 try:
                     html_text = get_clipboard_html(config)
                     is_plain = is_plain_html_fragment(html_text)
-                    log(f"Clipboard contains HTML (plain_fragment={is_plain})")
+                    log(f"[WORKFLOW] Clipboard contains HTML (plain_fragment={is_plain})")
                     if not is_plain:
                         should_use_html = True
+                        log("[WORKFLOW] Setting should_use_html=True (HTML flow)")
                     else:
-                        log("HTML fragment looks like Markdown, fallback to Markdown flow.")
+                        log("[WORKFLOW] Setting fallback_to_markdown=True (Markdown flow)")
+                        fallback_to_markdown = True
                 except ClipboardError as e:
-                    log(f"Detected HTML clipboard data but failed to read fragment: {e}")
+                    log(f"[WORKFLOW] Detected HTML clipboard data but failed to read fragment: {e}")
                     is_html = False
             else:
-                log("Clipboard contains HTML: False")
+                log("[WORKFLOW] Clipboard contains HTML: False")
             
             # 3. 检测当前活动应用
             target = detect_active_app()
-            log(f"Detected active target: {target}")
+            log(f"[WORKFLOW] Detected active target: {target}")
             
             # 4. 根据剪贴板内容类型和目标应用选择处理流程
             if should_use_html and target in ("word", "wps"):
                 # HTML 富文本流程：直接转换 HTML 为 DOCX
+                log("[WORKFLOW] *** ENTERING HTML_TO_WORD_FLOW ***")
                 self._handle_html_to_word_flow(target, config, html_text=html_text)
-            else:
-                # 原有的 Markdown 流程
+                log("[WORKFLOW] *** EXITING HTML_TO_WORD_FLOW ***")
+            elif fallback_to_markdown:
+                # HTML 被识别为 plain markdown，使用 Markdown 流程处理 HTML 中提取的纯文本
+                log("[WORKFLOW] *** ENTERING FALLBACK_MARKDOWN (from HTML) ***")
                 md_text = get_clipboard_text()
                 
                 if target in ("excel", "wps_excel") and config.get("enable_excel", True):
                     # Excel/WPS表格流程：直接插入表格数据
+                    log("[WORKFLOW] --- ENTERING EXCEL_FLOW (fallback) ---")
                     self._handle_excel_flow(md_text, target, config)
+                    log("[WORKFLOW] --- EXITING EXCEL_FLOW (fallback) ---")
                 elif target in ("word", "wps"):
                     # Word/WPS文字流程：转换为DOCX后插入
+                    log("[WORKFLOW] --- ENTERING WORD_FLOW (fallback) ---")
                     self._handle_word_flow(md_text, target, config)
+                    log("[WORKFLOW] --- EXITING WORD_FLOW (fallback) ---")
                 else:
                     # 未检测到应用，尝试自动打开预生成的文件
+                    log("[WORKFLOW] --- ENTERING NO_APP_FLOW (fallback) ---")
+                    self._handle_no_app_flow(
+                        md_text,
+                        config,
+                        is_html=False,
+                        html_text=None,
+                    )
+                    log("[WORKFLOW] --- EXITING NO_APP_FLOW (fallback) ---")
+                log("[WORKFLOW] *** EXITING FALLBACK_MARKDOWN ***")
+            else:
+                # 原有的 Markdown 流程
+                log("[WORKFLOW] *** ENTERING MARKDOWN_FLOW ***")
+                md_text = get_clipboard_text()
+                
+                if target in ("excel", "wps_excel") and config.get("enable_excel", True):
+                    # Excel/WPS表格流程：直接插入表格数据
+                    log("[WORKFLOW] --- ENTERING EXCEL_FLOW ---")
+                    self._handle_excel_flow(md_text, target, config)
+                    log("[WORKFLOW] --- EXITING EXCEL_FLOW ---")
+                elif target in ("word", "wps"):
+                    # Word/WPS文字流程：转换为DOCX后插入
+                    log("[WORKFLOW] --- ENTERING WORD_FLOW ---")
+                    self._handle_word_flow(md_text, target, config)
+                    log("[WORKFLOW] --- EXITING WORD_FLOW ---")
+                else:
+                    # 未检测到应用，尝试自动打开预生成的文件
+                    log("[WORKFLOW] --- ENTERING NO_APP_FLOW ---")
                     self._handle_no_app_flow(
                         md_text,
                         config,
                         is_html=should_use_html,
                         html_text=html_text if should_use_html else None,
                     )
+                    log("[WORKFLOW] --- EXITING NO_APP_FLOW ---")
+                log("[WORKFLOW] *** EXITING MARKDOWN_FLOW ***")
             
         except ClipboardError as e:
             log(f"Clipboard error: {e}")
@@ -185,11 +282,12 @@ class PasteWorkflow:
             config: 配置字典
             html_text: 预先读取好的 HTML 片段（可选）
         """
+        log("[HTML_FLOW] Starting HTML to Word flow")
         try:
             # 1. 获取并清理 HTML 内容
             if html_text is None:
                 html_text = get_clipboard_html(config)
-            log(f"Retrieved HTML from clipboard, length: {len(html_text)}")
+            log(f"[HTML_FLOW] Retrieved HTML from clipboard, length: {len(html_text)}")
             
             # 2. 生成 DOCX 字节流
             self._ensure_pandoc_integration()
@@ -199,6 +297,7 @@ class PasteWorkflow:
                 Keep_original_formula=config.get("Keep_original_formula", False),
                 enable_latex_replacements=config.get("enable_latex_replacements", True)
             )
+            log("[HTML_FLOW] Generated DOCX from HTML")
 
             # 3. 在内存中处理 DOCX 样式
             if config.get("html_disable_first_para_indent", True):
@@ -207,13 +306,48 @@ class PasteWorkflow:
                     disable_first_para_indent=True,
                     target_style="Body Text"
                 )
+            log("[HTML_FLOW] Processed DOCX styles")
 
             # 4. 使用临时文件插入
             temp_dir = config.get("temp_dir")  # 可选：支持 RAM 盘目录
             with EphemeralFile(suffix=".docx", dir_=temp_dir) as eph:
                 eph.write_bytes(docx_bytes)
+                log(f"[HTML_FLOW] Created temp DOCX at {eph.path}")
                 # 插入
+                log(f"[HTML_FLOW] *** CALLING _perform_word_insertion ***")
                 inserted = self._perform_word_insertion(eph.path, target)
+                log(f"[HTML_FLOW] *** RETURNED from _perform_word_insertion, result={inserted} ***")
+            
+            # 5. 可选保存文件
+            if config.get("keep_file", False):
+                try:
+                    output_path = generate_output_path(
+                        keep_file=True,
+                        save_dir=config.get("save_dir", ""),
+                        html_text=html_text
+                    )
+                    with open(output_path, "wb") as f:
+                        f.write(docx_bytes)
+                    log(f"[HTML_FLOW] Saved HTML-converted DOCX to: {output_path}")
+                except Exception as e:
+                    log(f"[HTML_FLOW] Failed to save HTML-converted DOCX file: {e}")
+            
+            # 6. 显示结果通知
+            if inserted:
+                app_name = "Word" if target == "word" else "WPS 文字"
+                self.notification_manager.notify(
+                    "PasteMD",
+                    t("workflow.html.insert_success", app=app_name),
+                    ok=True
+                )
+            else:
+                app_name = "Word" if target == "word" else "WPS 文字"
+                self.notification_manager.notify(
+                    "PasteMD",
+                    t("workflow.insert_failed_no_app", app=app_name),
+                    ok=False
+                )
+            log("[HTML_FLOW] Completed HTML to Word flow")
             
             # 5. 可选保存文件
             if config.get("keep_file", False):
@@ -279,11 +413,13 @@ class PasteWorkflow:
             target: 目标应用 (word 或 wps)
             config: 配置字典
         """
+        log("[MD_FLOW] Starting Markdown to Word flow")
         # 1. 规范化 Markdown 格式（处理智谱清言等来源的格式问题）
         md_text = normalize_markdown(md_text)
-        
+
         # 2. 处理LaTeX公式
         md_text = convert_latex_delimiters(md_text)
+        log("[MD_FLOW] Normalized Markdown text")
 
         # 2. 生成DOCX字节流
         self._ensure_pandoc_integration()
@@ -293,6 +429,7 @@ class PasteWorkflow:
             Keep_original_formula=config.get("Keep_original_formula", False),
             enable_latex_replacements=config.get("enable_latex_replacements", True)
         )
+        log("[MD_FLOW] Generated DOCX from Markdown")
 
         # 3. 在内存中处理 DOCX 样式
         if config.get("md_disable_first_para_indent", True):
@@ -301,13 +438,17 @@ class PasteWorkflow:
                 disable_first_para_indent=True,
                 target_style="Body Text"
             )
+        log("[MD_FLOW] Processed DOCX styles")
 
         # 4. 使用临时文件插入
         temp_dir = config.get("temp_dir")  # 可选：支持 RAM 盘目录
         with EphemeralFile(suffix=".docx", dir_=temp_dir) as eph:
             eph.write_bytes(docx_bytes)
+            log(f"[MD_FLOW] Created temp DOCX at {eph.path}")
             # 插入
+            log(f"[MD_FLOW] *** CALLING _perform_word_insertion ***")
             inserted = self._perform_word_insertion(eph.path, target)
+            log(f"[MD_FLOW] *** RETURNED from _perform_word_insertion, result={inserted} ***")
 
         # 5. 保存文件
         if config.get("keep_file", False):
@@ -364,20 +505,27 @@ class PasteWorkflow:
         Returns:
             True 如果插入成功
         """
+        log(f"[INSERT] _perform_word_insertion called with target={target}, docx_path={docx_path}")
         if target == "word":
             try:
-                return self.word_inserter.insert(docx_path, app_state.config.get("move_cursor_to_end", True))
-            except InsertError as e:
-                log(f"Word insertion failed: {e}")
+                log("[INSERT] Calling word_inserter.insert()...")
+                self.word_inserter.insert(docx_path, app_state.config.get("move_cursor_to_end", True))
+                log("[INSERT] word_inserter.insert() completed successfully")
+                return True
+            except Exception as e:
+                log(f"[INSERT] Word insertion failed: {e}")
                 return False
         elif target == "wps":
             try:
-                return self.wps_inserter.insert(docx_path, app_state.config.get("move_cursor_to_end", True))
-            except InsertError as e:
-                log(f"WPS insertion failed: {e}")
+                log("[INSERT] Calling wps_inserter.insert()...")
+                self.wps_inserter.insert(docx_path, app_state.config.get("move_cursor_to_end", True))
+                log("[INSERT] wps_inserter.insert() completed successfully")
+                return True
+            except Exception as e:
+                log(f"[INSERT] WPS insertion failed: {e}")
                 return False
         else:
-            log(f"Unknown insert target: {target}")
+            log(f"[INSERT] Unknown insert target: {target}")
             return False
     
     def _show_word_result(self, target: str, inserted: bool) -> None:

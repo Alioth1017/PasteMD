@@ -7,7 +7,7 @@ import urllib.request
 import urllib.error
 from typing import Optional, Dict, Any
 
-from .logging import log
+from .app_logging import log
 
 
 class VersionChecker:

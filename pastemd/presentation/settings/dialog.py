@@ -6,7 +6,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
 from typing import Optional, Callable, Dict, Any
 
-from ...utils.logging import log
+from ...utils.app_logging import log
 from ...utils.win32 import get_dpi_scale
 from ...utils.resources import resource_path
 from ...i18n import t, iter_languages, get_language_label

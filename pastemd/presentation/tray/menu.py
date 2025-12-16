@@ -11,7 +11,7 @@ from ...config.loader import ConfigLoader
 from ...config.paths import get_log_path, get_config_path
 from ...domains.notification.manager import NotificationManager
 from ...utils.fs import ensure_dir
-from ...utils.logging import log
+from ...utils.app_logging import log
 from ...utils.version_checker import VersionChecker
 from ...i18n import t, iter_languages, get_language, set_language, get_language_label
 from .icon import create_status_icon
@@ -265,18 +265,32 @@ class TrayMenuManager:
     
     def _on_open_save_dir(self, icon, item):
         """打开保存目录"""
+        import sys
+        import subprocess
         save_dir = app_state.config.get("save_dir", "")
         save_dir = os.path.expandvars(save_dir)
         ensure_dir(save_dir)
-        os.startfile(save_dir)
+        if sys.platform == 'darwin':
+            subprocess.Popen(['open', save_dir])
+        elif sys.platform == 'win32':
+            os.startfile(save_dir)
+        else:  # Linux
+            subprocess.Popen(['xdg-open', save_dir])
     
     def _on_open_log(self, icon, item):
         """打开日志文件"""
+        import sys
+        import subprocess
         log_path = get_log_path()
         if not os.path.exists(log_path):
             # 创建空日志文件
             open(log_path, "w", encoding="utf-8").close()
-        os.startfile(log_path)
+        if sys.platform == 'darwin':
+            subprocess.Popen(['open', log_path])
+        elif sys.platform == 'win32':
+            os.startfile(log_path)
+        else:  # Linux
+            subprocess.Popen(['xdg-open', log_path])
     
     def _on_open_settings(self, icon, item):
         """打开设置界面"""

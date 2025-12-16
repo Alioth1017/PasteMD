@@ -1,40 +1,36 @@
 # notification_manager.py
-"""Notification manager: Win11/Win10 toast with async worker (non-blocking)."""
+"""Notification manager: Platform-agnostic notification with async worker (non-blocking)."""
 
-import os
 import sys
 import threading
 import queue
 import time
-import warnings
 from typing import Optional
 
 from ...core.constants import NOTIFICATION_TIMEOUT
-from ...config.paths import get_app_icon_path
-from ...utils.logging import log
+from ...utils.app_logging import log
 from ...core.state import app_state
 
-# 忽略 win10toast 的 pkg_resources 弃用告警
-warnings.filterwarnings("ignore", category=UserWarning, module="win10toast")
+# 使用平台抽象层
+if sys.platform == 'win32':
+    # Windows: 使用原有的 win11toast/win10toast 实现
+    import os
+    import warnings
+    from ...config.paths import get_app_icon_path
+    
+    # 忽略 win10toast 的 pkg_resources 弃用告警
+    warnings.filterwarnings("ignore", category=UserWarning, module="win10toast")
+    
+    # --- Win11 优先 ---
+    try:
+        from win11toast import toast as _win11_toast
+        _WIN11_OK = True
+    except Exception:
+        _WIN11_OK = False
 
-# --- plyer 作为最终回退 ---
-try:
-    from plyer import notification as _plyer_notification
-    _PLYER_OK = True
-except Exception:
-    _PLYER_OK = False
-
-# --- Win11 优先 ---
-try:
-    from win11toast import toast as _win11_toast
-    _WIN11_OK = (sys.platform == "win32")
-except Exception:
-    _WIN11_OK = False
-
-# --- Win10 次选（单例） ---
-_WIN10_OK = False
-_win10_toaster = None
-if sys.platform == "win32":
+    # --- Win10 次选（单例） ---
+    _WIN10_OK = False
+    _win10_toaster = None
     try:
         from win10toast import ToastNotifier as _ToastNotifier
         _win10_toaster = _ToastNotifier()
@@ -42,9 +38,18 @@ if sys.platform == "win32":
     except Exception:
         _win10_toaster = None
         _WIN10_OK = False
+else:
+    # macOS/Linux: 使用平台抽象层
+    from ...platforms import get_notification_handler
+    _platform_notification = get_notification_handler()
+    _WIN11_OK = False
+    _WIN10_OK = False
 
 
 def _icon_or_none(path: Optional[str]) -> Optional[str]:
+    if sys.platform != 'win32':
+        return None
+    import os
     return path if path and os.path.exists(path) else None
 
 
@@ -61,7 +66,11 @@ class NotificationManager:
 
     def __init__(self, app_name: str = "PasteMD", max_queue: int = 30):
         self.app_name = app_name
-        self.icon_path = get_app_icon_path()
+        if sys.platform == 'win32':
+            from ...config.paths import get_app_icon_path
+            self.icon_path = get_app_icon_path()
+        else:
+            self.icon_path = None
         self._q: "queue.Queue[tuple[str,str,bool]]" = queue.Queue(maxsize=max_queue)
         self._stop = threading.Event()
         self._worker = threading.Thread(target=self._worker_loop, name="NotifyWorker", daemon=True)
@@ -91,9 +100,10 @@ class NotificationManager:
                 pass  # 还是塞不进去就算了
 
     def is_available(self) -> bool:
-        if sys.platform == "win32" and (_WIN11_OK or _WIN10_OK):
-            return True
-        return _PLYER_OK
+        if sys.platform == "win32":
+            return _WIN11_OK or _WIN10_OK
+        else:
+            return True  # 平台抽象层总是可用
 
     # ---- 优雅关闭（可选，应用退出时调用）----
     def shutdown(self, drain_timeout: float = 1.0) -> None:
@@ -131,8 +141,18 @@ class NotificationManager:
                 time.sleep(0.01)
                 self._q.task_done()
 
-    # ---- 具体发送实现（Win11→Win10→plyer）----
+    # ---- 具体发送实现（Win11→Win10→平台抽象层）----
     def _send_one(self, title: str, message: str) -> None:
+        if sys.platform != 'win32':
+            # macOS/Linux: 使用平台抽象层
+            try:
+                _platform_notification.notify(title, message, NOTIFICATION_TIMEOUT)
+                return
+            except Exception as e:
+                log(f"Platform notification error: {e}")
+                return
+        
+        # Windows 专用实现
         # 1) Win11
         if _WIN11_OK:
             try:
@@ -160,16 +180,4 @@ class NotificationManager:
                 )
                 return
             except Exception as e:
-                log(f"win10toast error, fallback to plyer: {e}")
-
-        # 3) 其它平台/全部失败：plyer（避免托盘重复，仍建议不传图标）
-        if _PLYER_OK:
-            try:
-                _plyer_notification.notify(
-                    title=title,
-                    message=message,
-                    timeout=NOTIFICATION_TIMEOUT,
-                    app_icon=self.icon_path if os.path.exists(self.icon_path) else None,
-                )
-            except Exception as e:
-                log(f"plyer notify error: {e}")
+                log(f"win10toast error: {e}")

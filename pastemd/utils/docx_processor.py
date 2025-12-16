@@ -2,7 +2,7 @@
 
 import io
 from docx import Document
-from ..utils.logging import log
+from .app_logging import log
 
 
 class DocxProcessor:

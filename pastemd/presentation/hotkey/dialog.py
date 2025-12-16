@@ -5,7 +5,7 @@ from tkinter import ttk, messagebox
 from typing import Optional, Callable
 
 import os
-from ...utils.logging import log
+from ...utils.app_logging import log
 from ...utils.win32 import HotkeyChecker, get_dpi_scale
 from ...utils.resources import resource_path
 from ...domains.hotkey.recorder import HotkeyRecorder

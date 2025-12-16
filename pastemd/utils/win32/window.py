@@ -5,7 +5,7 @@ from time import sleep
 import psutil
 import win32gui
 import win32process
-from ..logging import log
+from ..app_logging import log
 
 
 def get_foreground_window() -> int:

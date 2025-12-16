@@ -2,7 +2,7 @@
 
 import win32com.client
 from .window import get_foreground_process_name, get_foreground_window_title
-from ..logging import log
+from ..app_logging import log
 
 
 def detect_active_app() -> str:

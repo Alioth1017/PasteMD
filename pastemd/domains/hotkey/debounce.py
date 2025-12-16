@@ -6,7 +6,7 @@ from typing import Callable
 
 from ...core.constants import FIRE_DEBOUNCE_SEC
 from ...core.state import app_state
-from ...utils.logging import log
+from ...utils.app_logging import log
 
 
 class DebounceManager:

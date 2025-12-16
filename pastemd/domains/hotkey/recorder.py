@@ -3,7 +3,7 @@
 from typing import Optional, Callable, Set
 from pynput import keyboard
 
-from ...utils.logging import log
+from ...utils.app_logging import log
 from ...utils.win32 import HotkeyChecker
 from ...i18n import t
 

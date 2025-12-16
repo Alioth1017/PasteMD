@@ -3,7 +3,7 @@
 from typing import Optional, Callable
 from pynput import keyboard
 
-from ...utils.logging import log
+from ...utils.app_logging import log
 
 
 class HotkeyManager:

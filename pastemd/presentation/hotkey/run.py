@@ -4,7 +4,7 @@ from ...domains.hotkey.manager import HotkeyManager
 from ...domains.hotkey.debounce import DebounceManager
 from ...config.defaults import DEFAULT_CONFIG
 from ...core.state import app_state
-from ...utils.logging import log
+from ...utils.app_logging import log
 from ...utils.win32 import HotkeyChecker
 from ...i18n import t
 
@@ -54,11 +54,17 @@ class HotkeyRunner:
                 )
         
         def on_hotkey():
+            log(f"[Hotkey] Triggered! enabled={app_state.enabled}")
             if app_state.enabled:
+                log("[Hotkey] Executing controller callback...")
                 self.debounce_manager.trigger_async(self.controller_callback)
+            else:
+                log("[Hotkey] Disabled, skipping")
         
+        log(f"[Hotkey] Binding hotkey: {hotkey}")
         try:
             self.hotkey_manager.bind(hotkey, on_hotkey)
+            log(f"[Hotkey] Successfully bound: {hotkey}")
         except Exception as e:
 
             log(f"Failed to bind hotkey '{hotkey}': {e}")

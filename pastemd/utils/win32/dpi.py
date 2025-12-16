@@ -2,7 +2,7 @@
 
 import ctypes
 import platform
-from ..logging import log
+from ..app_logging import log
 
 def set_dpi_awareness():
     """

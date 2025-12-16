@@ -4,7 +4,7 @@ import ctypes
 from typing import Dict, Optional, Set, Tuple
 
 from ...i18n import t
-from ...utils.logging import log
+from ...utils.app_logging import log
 
 user32 = ctypes.windll.user32
 

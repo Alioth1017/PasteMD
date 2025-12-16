@@ -2,9 +2,10 @@
 
 import os
 import subprocess
+import sys
 from typing import Literal, List
 
-from ...utils.logging import log
+from ...utils.app_logging import log
 from ...domains.spreadsheet.generator import SpreadsheetGenerator
 
 
@@ -30,22 +31,30 @@ class AppLauncher:
                 log(f"Document file not found: {docx_path}")
                 return False
             
-            # 使用 subprocess 以正常窗口模式打开文件
-            # CREATE_NEW_CONSOLE 或 SW_SHOWNORMAL 确保窗口在前台
-            try:
-                # 方法1: 使用 start 命令，会在前台打开
-                subprocess.Popen(
-                    ['cmd', '/c', 'start', '', docx_path],
-                    shell=False,
-                    creationflags=subprocess.CREATE_NO_WINDOW
-                )
+            # 使用平台特定的方式打开文件
+            if sys.platform == 'darwin':  # macOS
+                subprocess.Popen(['open', docx_path])
                 log(f"Successfully opened document in foreground: {docx_path}")
                 return True
-            except Exception as e:
-                log(f"Failed to open with subprocess, falling back to os.startfile: {e}")
-                # 回退到 os.startfile
-                os.startfile(docx_path)
-                log(f"Successfully opened document with default application: {docx_path}")
+            elif sys.platform == 'win32':  # Windows
+                try:
+                    # 方法1: 使用 start 命令，会在前台打开
+                    subprocess.Popen(
+                        ['cmd', '/c', 'start', '', docx_path],
+                        shell=False,
+                        creationflags=subprocess.CREATE_NO_WINDOW
+                    )
+                    log(f"Successfully opened document in foreground: {docx_path}")
+                    return True
+                except Exception as e:
+                    log(f"Failed to open with subprocess, falling back to os.startfile: {e}")
+                    # 回退到 os.startfile
+                    os.startfile(docx_path)
+                    log(f"Successfully opened document with default application: {docx_path}")
+                    return True
+            else:  # Linux
+                subprocess.Popen(['xdg-open', docx_path])
+                log(f"Successfully opened document: {docx_path}")
                 return True
         except Exception as e:
             log(f"Failed to open document: {e}")
@@ -67,19 +76,28 @@ class AppLauncher:
                 log(f"Spreadsheet file not found: {xlsx_path}")
                 return False
             
-            # 使用 subprocess 以正常窗口模式打开文件
-            try:
-                subprocess.Popen(
-                    ['cmd', '/c', 'start', '', xlsx_path],
-                    shell=False,
-                    creationflags=subprocess.CREATE_NO_WINDOW
-                )
+            # 使用平台特定的方式打开文件
+            if sys.platform == 'darwin':  # macOS
+                subprocess.Popen(['open', xlsx_path])
                 log(f"Successfully opened spreadsheet in foreground: {xlsx_path}")
                 return True
-            except Exception as e:
-                log(f"Failed to open with subprocess, falling back to os.startfile: {e}")
-                os.startfile(xlsx_path)
-                log(f"Successfully opened spreadsheet with default application: {xlsx_path}")
+            elif sys.platform == 'win32':  # Windows
+                try:
+                    subprocess.Popen(
+                        ['cmd', '/c', 'start', '', xlsx_path],
+                        shell=False,
+                        creationflags=subprocess.CREATE_NO_WINDOW
+                    )
+                    log(f"Successfully opened spreadsheet in foreground: {xlsx_path}")
+                    return True
+                except Exception as e:
+                    log(f"Failed to open with subprocess, falling back to os.startfile: {e}")
+                    os.startfile(xlsx_path)
+                    log(f"Successfully opened spreadsheet with default application: {xlsx_path}")
+                    return True
+            else:  # Linux
+                subprocess.Popen(['xdg-open', xlsx_path])
+                log(f"Successfully opened spreadsheet: {xlsx_path}")
                 return True
         except Exception as e:
             log(f"Failed to open spreadsheet: {e}")

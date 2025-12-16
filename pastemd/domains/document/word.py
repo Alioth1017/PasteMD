@@ -6,7 +6,7 @@ from win32com.client import gencache
 
 from .base import BaseDocumentInserter
 from ...utils.com import ensure_com
-from ...utils.logging import log
+from ...utils.app_logging import log
 from ...core.constants import WORD_INSERT_RETRY_COUNT, WORD_INSERT_RETRY_DELAY
 from ...core.errors import InsertError
 

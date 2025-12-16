@@ -24,6 +24,16 @@ def _get_logger() -> logging.Logger:
     if _logger.handlers:
         return _logger
 
+    # Add console handler (stdout)
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(logging.DEBUG)
+    console_formatter = logging.Formatter(
+        "[%(asctime)s] %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+    )
+    console_handler.setFormatter(console_formatter)
+    _logger.addHandler(console_handler)
+
     try:
         log_path = get_log_path()
         # Ensure log directory exists
@@ -47,7 +57,7 @@ def _get_logger() -> logging.Logger:
         _logger.addHandler(handler)
     except Exception:
         # If file handler fails, use NullHandler to prevent errors
-        _logger.addHandler(logging.NullHandler())
+        pass
 
     return _logger
 

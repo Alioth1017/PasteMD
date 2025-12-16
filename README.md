@@ -64,7 +64,7 @@
 </p>
 
 
-* 全局热键（默认 `Ctrl+Shift+B`）一键粘贴 Markdown → DOCX。
+* 全局热键（Windows 默认 `Ctrl+Shift+V`，macOS 默认 `Cmd+Shift+V`）一键粘贴 Markdown → DOCX。
 * **✨ 智能识别 Markdown 表格**，自动粘贴到 Excel。
 * 自动识别当前前台应用：Word 或 WPS。
 * 智能打开所需应用为Word/Excel。
@@ -150,7 +150,7 @@
 
 字段说明：
 
-* `hotkey`：全局热键，语法如 `<ctrl>+<alt>+v`。
+* `hotkey`：全局热键，语法如 `<ctrl>+<alt>+v`。默认值：Windows `<ctrl>+<shift>+v`，macOS `<cmd>+<shift>+v`。
 * `pandoc_path`：Pandoc 可执行文件路径。
 * `reference_docx`：Pandoc 参考模板（可选）。
 * `save_dir`：保留文件时的保存目录。

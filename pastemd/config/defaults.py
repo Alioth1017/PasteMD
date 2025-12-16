@@ -15,26 +15,42 @@ def find_pandoc() -> str:
     - Inno 安装
     - 源码运行（系统 pandoc）
     """
-    # exe 同级 pandoc
-    exe_dir = os.path.dirname(sys.executable)
-    candidate = os.path.join(exe_dir, "pandoc", "pandoc.exe")
-    if os.path.exists(candidate):
-        return candidate
+    # Windows 特定路径
+    if sys.platform == 'win32':
+        # exe 同级 pandoc
+        exe_dir = os.path.dirname(sys.executable)
+        candidate = os.path.join(exe_dir, "pandoc", "pandoc.exe")
+        if os.path.exists(candidate):
+            return candidate
 
-    # 打包资源路径（Nuitka / PyInstaller onedir / 新方案）
-    candidate = resource_path("pandoc/pandoc.exe")
-    if os.path.exists(candidate):
-        return candidate
-
+        # 打包资源路径（Nuitka / PyInstaller onedir / 新方案）
+        candidate = resource_path("pandoc/pandoc.exe")
+        if os.path.exists(candidate):
+            return candidate
+    
     # 兜底：系统 pandoc
     return "pandoc"
 
 
+def get_default_save_dir() -> str:
+    """获取平台特定的默认保存目录"""
+    if sys.platform == 'win32':
+        # Windows: 使用 %USERPROFILE%\Documents\pastemd
+        return os.path.expandvars(r"%USERPROFILE%\Documents\pastemd")
+    elif sys.platform == 'darwin':
+        # macOS: 使用 ~/Documents/pastemd
+        return os.path.expanduser("~/Documents/pastemd")
+    else:
+        # Linux: 使用 ~/Documents/pastemd
+        return os.path.expanduser("~/Documents/pastemd")
+
+
 DEFAULT_CONFIG: Dict[str, Any] = {
-    "hotkey": "<ctrl>+<shift>+b",
+    # Windows: Ctrl+Shift+V, macOS: Cmd+Shift+V
+    "hotkey": "<cmd>+<shift>+v" if sys.platform == "darwin" else "<ctrl>+<shift>+v",
     "pandoc_path": find_pandoc(),
     "reference_docx": None,
-    "save_dir": os.path.expandvars(r"%USERPROFILE%\Documents\pastemd"),
+    "save_dir": get_default_save_dir(),
     "keep_file": False,
     "notify": True,
     "enable_excel": True,

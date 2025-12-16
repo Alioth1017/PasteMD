@@ -7,7 +7,7 @@ from openpyxl.utils import get_column_letter
 from openpyxl.cell.text import InlineFont
 from openpyxl.cell.rich_text import TextBlock, CellRichText
 
-from ...utils.logging import log
+from ...utils.app_logging import log
 from ...core.errors import InsertError
 from .formatting import CellFormat
 

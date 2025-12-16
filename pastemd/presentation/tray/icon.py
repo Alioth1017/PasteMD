@@ -1,10 +1,18 @@
 """Tray icon generation and management."""
 
+import sys
 import os
 from PIL import Image, ImageDraw
 
 from ...config.paths import get_app_png_path
-from ...utils.win32 import get_dpi_scale
+
+# Windows 专用 DPI 缩放
+if sys.platform == 'win32':
+    from ...utils.win32 import get_dpi_scale
+else:
+    def get_dpi_scale():
+        """macOS/Linux 默认返回 1.0（不缩放）"""
+        return 1.0
 
 
 def create_fallback_icon(ok: bool = True, flash: bool = False) -> Image.Image:

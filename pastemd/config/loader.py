@@ -5,7 +5,7 @@ from .defaults import DEFAULT_CONFIG
 from .paths import get_config_path
 from ..core.types import ConfigDict
 from ..core.errors import ConfigError
-from ..utils.logging import log
+from ..utils.app_logging import log
 
 
 class ConfigLoader:

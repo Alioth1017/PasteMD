@@ -4,7 +4,7 @@ from typing import List
 from .base import BaseTableInserter
 from .formatting import CellFormat
 from ...core.errors import InsertError
-from ...utils.logging import log
+from ...utils.app_logging import log
 
 
 class BaseExcelInserter(BaseTableInserter):
