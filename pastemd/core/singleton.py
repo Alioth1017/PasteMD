@@ -2,6 +2,7 @@
 
 import sys
 import os
+import errno
 from .state import app_state
 from ..utils.app_logging import log
 
@@ -67,14 +68,66 @@ class SingleInstanceChecker:
             return False
     
     def _is_already_running_unix(self) -> bool:
-        """Unix-like 平台检查（使用文件锁）"""
-        try:
-            self.lock_file = open(self.lock_file_path, 'w')
+        """Unix-like 平台检查（使用文件锁），带陈旧锁自检"""
+
+        def _lock() -> bool:
+            log(f"Attempting to acquire lock: {self.lock_file_path}")
+            self.lock_file = open(self.lock_file_path, "a+")
             fcntl.flock(self.lock_file.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
-            log(f"Lock file acquired: {self.lock_file_path}")
+            # 写入当前 PID，便于崩溃后识别陈旧锁
+            try:
+                self.lock_file.seek(0)
+                self.lock_file.truncate()
+                self.lock_file.write(str(os.getpid()))
+                self.lock_file.flush()
+            except Exception as e:
+                log(f"Failed to write PID to lock file: {e}")
+            log(f"Lock file acquired: {self.lock_file_path} (PID: {os.getpid()})")
             return False
-        except IOError:
-            log(f"Lock file already held, another instance is running: {self.lock_file_path}")
+
+        def _is_stale() -> bool:
+            try:
+                with open(self.lock_file_path, "r") as f:
+                    pid_str = f.read().strip()
+                    log(f"Lock file contains PID: '{pid_str}'")
+                    if not pid_str.isdigit():
+                        log("Lock file PID is not a number, treating as stale")
+                        return True
+                    pid = int(pid_str)
+                # 检查进程是否存在
+                try:
+                    os.kill(pid, 0)
+                    log(f"Process {pid} exists, lock is NOT stale")
+                except OSError as e:
+                    is_dead = e.errno == errno.ESRCH
+                    log(f"Process {pid} check result: errno={e.errno}, dead={is_dead}")
+                    return is_dead  # 进程不存在
+                return False
+            except FileNotFoundError:
+                log("Lock file not found, treating as stale")
+                return True
+            except Exception as e:
+                log(f"Error checking if lock is stale: {e}")
+                return False
+
+        try:
+            return _lock()
+        except IOError as e:
+            log(f"Failed to acquire lock (errno={e.errno}), checking if stale...")
+            # 尝试判断是否陈旧锁
+            if _is_stale():
+                log("Lock is stale, attempting to clean and retry")
+                try:
+                    os.unlink(self.lock_file_path)
+                    log(f"Removed stale lock file: {self.lock_file_path}")
+                except Exception as unlink_err:
+                    log(f"Failed to remove stale lock: {unlink_err}")
+                try:
+                    return _lock()
+                except Exception as retry_err:
+                    log(f"Retry lock failed after cleaning stale lock: {retry_err}")
+                    return True
+            log(f"Lock file already held by live process: {self.lock_file_path}")
             return True
         except Exception as e:
             log(f"Error checking single instance: {e}")
@@ -131,19 +184,21 @@ def check_single_instance() -> bool:
     Returns:
         bool: 如果这是第一个实例返回 True，否则返回 False 并退出程序
     """
+    log("=== Starting single instance check ===")
     checker = SingleInstanceChecker()
     
     # 检查是否已有实例在运行
     if checker.is_already_running():
-        log("Another instance of the application is already running")
+        log("*** Another instance detected, exiting ***")
         return False
     
     # 尝试获取锁
     if not checker.acquire_lock():
-        log("Failed to acquire application lock")
+        log("*** Failed to acquire application lock, exiting ***")
         return False
     
     # 保存检查器实例以便后续释放锁
     app_state.instance_checker = checker
+    log("=== Single instance check passed ===")
     
     return True

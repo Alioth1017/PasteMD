@@ -3,6 +3,7 @@
 import pystray
 
 from ...core.state import app_state
+from ...utils.app_logging import log
 from .icon import create_status_icon
 from .menu import TrayMenuManager
 
@@ -15,10 +16,10 @@ class TrayRunner:
     
     def run(self, app_name: str = "PasteMD") -> None:
         """启动托盘图标"""
-        # 创建初始图标
+        log("TrayRunner: creating status icon")
         tray_icon = create_status_icon(ok=True)
         
-        # 创建托盘实例
+        log("TrayRunner: building pystray icon")
         icon = pystray.Icon(
             app_name,
             tray_icon,
@@ -29,5 +30,6 @@ class TrayRunner:
         # 保存图标实例到全局状态
         app_state.icon = icon
         
-        # 启动托盘（阻塞运行）
+        log("TrayRunner: entering icon.run (blocking)")
         icon.run()
+        log("TrayRunner: icon.run returned")

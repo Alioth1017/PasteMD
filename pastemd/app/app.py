@@ -104,6 +104,11 @@ def check_update_in_background(notification_manager: NotificationManager, tray_m
 
 def main() -> None:
     """应用程序主入口点"""
+    # 强制初始化日志系统（确保任何退出都能被记录）
+    from ..utils.app_logging import _get_logger
+    _get_logger()  # 触发日志系统初始化
+    
+    log("=== App main starting ===")
     try:
         # 设置 DPI 感知（尽早调用）
         set_dpi_awareness()
@@ -114,6 +119,7 @@ def main() -> None:
             sys.exit(1)
         
         # 初始化应用程序
+        log("Initializing application")
         container = initialize_application()
 
         # 初始化 UI 队列，确保 Tk 等 UI 操作始终在主线程
@@ -124,21 +130,29 @@ def main() -> None:
         import threading
         app_state.quit_event = threading.Event()
         
-        # 初始化全局 Tk 实例 (解决 Tcl_AsyncDelete 问题)
-        root = tk.Tk()
-        root.withdraw()  # 隐藏主窗口
-        app_state.root = root
+        # 初始化全局 Tk 实例（仅 Windows 需要，macOS 可选）
+        # macOS 托盘用 pystray + AppKit，不依赖 Tk mainloop
+        if sys.platform != 'darwin':
+            root = tk.Tk()
+            root.withdraw()  # 隐藏主窗口
+            app_state.root = root
+        else:
+            # macOS: 延迟初始化 Tk（仅在需要打开对话框时才创建）
+            app_state.root = None
 
-        # 启动热键监听
+        # 获取组件（不立即启动）
         hotkey_runner = container.get_hotkey_runner()
-        hotkey_runner.start()
-        
-        # 获取通知管理器和菜单管理器
         notification_manager = container.get_notification_manager()
         tray_menu_manager = container.tray_menu_manager
         
-        # 显示启动通知
-        show_startup_notification(notification_manager)
+        # 在后台线程启动热键监听（避免阻塞托盘显示）
+        def start_hotkey_async():
+            import time
+            time.sleep(0.1)  # 短暂延迟，让托盘先显示
+            hotkey_runner.start()
+            show_startup_notification(notification_manager)
+        
+        threading.Thread(target=start_hotkey_async, daemon=True).start()
         
         # 启动后台版本检查（无需显示通知）
         check_update_in_background(notification_manager, tray_menu_manager)
@@ -146,17 +160,20 @@ def main() -> None:
         # macOS: pystray 必须在主线程运行，不能用 tkinter mainloop
         # Windows: 可以用线程 + tkinter
         if sys.platform == 'darwin':
+            log("Main loop: macOS tray on main thread, UI queue on worker")
             # macOS: 托盘在主线程，UI 队列在后台线程处理
             def process_ui_queue_thread():
                 while True:
                     try:
                         quit_event = getattr(app_state, 'quit_event', None)
                         if quit_event and quit_event.is_set():
+                            log("UI queue thread: quit event detected")
                             break
                         
                         try:
                             task = ui_queue.get(timeout=0.1)
                             if task is None:
+                                log("UI queue thread: stop signal received")
                                 break
                             task()
                         except queue.Empty:
@@ -169,7 +186,9 @@ def main() -> None:
             # 托盘在主线程运行（阻塞）
             tray_runner = container.get_tray_runner()
             tray_runner.run()
+            log("Main: tray_runner.run returned")
         else:
+            log("Main loop: Windows branch (tray thread, tk mainloop)")
             # Windows: 托盘在后台线程，tkinter 在主线程
             tray_runner = container.get_tray_runner()
             threading.Thread(target=tray_runner.run, daemon=True).start()

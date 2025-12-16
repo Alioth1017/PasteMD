@@ -33,7 +33,12 @@ class HotkeyDialog:
         if app_state.root:
             self.root = tk.Toplevel(app_state.root)
         else:
+            # macOS 延迟初始化：首次创建对话框时初始化 Tk root
             self.root = tk.Tk()
+            self.root.withdraw()
+            app_state.root = self.root
+            # 创建 Toplevel 作为实际对话框
+            self.root = tk.Toplevel(app_state.root)
             
         self.root.title(t("hotkey.dialog.title"))
         

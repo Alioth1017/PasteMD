@@ -479,6 +479,7 @@ class TrayMenuManager:
     
     def _on_quit(self, icon, item):
         """退出应用程序"""
+        log("TrayMenu: quit clicked -> stopping icon and signaling quit_event")
         icon.stop()
         
         # 设置退出事件（AppState 中已经声明了这个属性）

@@ -42,8 +42,14 @@ pyinstaller \
     --add-data="pastemd/lua:pastemd/lua" \
     --add-data="pastemd/i18n/locales:pastemd/i18n/locales" \
     --add-data="assets/icons:assets/icons" \
-    --hidden-import=pystray._appkit \
-    --hidden-import=PIL._tkinter_finder \
+        --hidden-import=tkinter \
+    --hidden-import=pastemd.platforms.macos.app_detector \
+    --hidden-import=pastemd.platforms.macos.clipboard \
+    --hidden-import=pastemd.platforms.macos.hotkey \
+    --hidden-import=pastemd.platforms.macos.notification \
+    --hidden-import=pastemd.platforms.macos.document_inserter \
+        --hidden-import=pystray._appkit \
+        --hidden-import=PIL._tkinter_finder \
     pastemd/__main__.py
 
 # Copy to release directory
