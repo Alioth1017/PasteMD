@@ -23,7 +23,7 @@ OutputBaseFilename=PasteMD_pandoc-Setup_v{#MyAppVersion}
 Compression=lzma
 SolidCompression=yes
 WizardStyle=modern
-ArchitecturesInstallIn64BitMode=x64
+ArchitecturesInstallIn64BitMode=x64compatible
 Uninstallable=yes
 ; 设置默认权限为最低，但允许通过对话框覆盖
 PrivilegesRequired=lowest
@@ -102,5 +102,5 @@ Type: filesandordirs; Name: "{userappdata}\{#MyAppName}"
 
 [UninstallRun]
 ; 卸载前尝试结束进程
-Filename: "taskkill"; Parameters: "/f /im {#MyAppExeName}"; Flags: runhidden
+Filename: "taskkill"; Parameters: "/f /im {#MyAppExeName}"; Flags: runhidden; RunOnceId: "KillPasteMD"
 
