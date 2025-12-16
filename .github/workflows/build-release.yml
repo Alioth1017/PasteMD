@@ -32,7 +32,7 @@ jobs:
     
     - name: Build with Nuitka
       run: |
-        python -m nuitka --standalone --onedir --output-dir=nuitka --output-filename=PasteMD.exe --windows-icon-from-ico=assets/icons/logo.ico --company-name="RichQAQ" --product-name="PasteMD" --file-version="${{ github.event.inputs.version || '0.1.6.3' }}" --product-version="${{ github.event.inputs.version || '0.1.6.3' }}" --file-description="Markdown to Word/Excel clipboard tool" --copyright="Copyright (c) 2024 RichQAQ" --windows-console-mode=disable --enable-plugin=tk-inter --include-data-dir=pastemd/lua=pastemd/lua --include-data-dir=pastemd/i18n/locales=pastemd/i18n/locales --include-data-dir=assets/icons=assets/icons --follow-imports --assume-yes-for-downloads pastemd/__main__.py
+        python -m nuitka --standalone --output-dir=nuitka --output-filename=PasteMD.exe --windows-icon-from-ico=assets/icons/logo.ico --company-name="RichQAQ" --product-name="PasteMD" --file-version="${{ github.event.inputs.version || '0.1.6.3' }}" --product-version="${{ github.event.inputs.version || '0.1.6.3' }}" --file-description="Markdown to Word/Excel clipboard tool" --copyright="Copyright (c) 2024 RichQAQ" --windows-console-mode=disable --enable-plugin=tk-inter --include-data-dir=pastemd/lua=pastemd/lua --include-data-dir=pastemd/i18n/locales=pastemd/i18n/locales --include-data-dir=assets/icons=assets/icons --follow-imports --assume-yes-for-downloads pastemd/__main__.py
     
     - name: Download Inno Setup
       run: |

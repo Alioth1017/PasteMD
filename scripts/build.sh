@@ -28,7 +28,6 @@ pip install nuitka ordered-set
 echo "Building with Nuitka..."
 python -m nuitka \
     --standalone \
-    --onedir \
     --output-dir=nuitka \
     --output-filename=PasteMD.exe \
     --windows-icon-from-ico=assets/icons/logo.ico \
