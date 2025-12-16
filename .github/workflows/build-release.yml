@@ -36,9 +36,17 @@ jobs:
     
     - name: Download Inno Setup
       run: |
-        curl -L -o innosetup.exe "https://jrsoftware.org/download.php/is.exe"
-        .\innosetup.exe /VERYSILENT /SUPPRESSMSGBOXES /NORESTART /SP-
-        Start-Sleep -Seconds 30
+        # Download Inno Setup installer
+        Invoke-WebRequest -Uri "https://files.jrsoftware.org/is/6/innosetup-6.3.3.exe" -OutFile "innosetup.exe"
+        # Install with all languages
+        Start-Process -FilePath ".\innosetup.exe" -ArgumentList "/VERYSILENT","/SUPPRESSMSGBOXES","/NORESTART","/SP-","/ALLUSERS" -Wait
+        # Verify installation
+        if (Test-Path "C:\Program Files (x86)\Inno Setup 6\ISCC.exe") {
+          Write-Host "Inno Setup installed successfully"
+        } else {
+          Write-Error "Inno Setup installation failed"
+          exit 1
+        }
     
     - name: Build Installer
       run: |
