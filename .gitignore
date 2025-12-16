@@ -235,7 +235,13 @@ Output/
 .idea/inspectionProfiles/profiles_settings.xml
 .idea/inspectionProfiles/Project_Default.xml
 
-/scripts
+# Exclude scripts directory but keep build/release scripts
+scripts/*
+!scripts/build.sh
+!scripts/build_macos.sh
+!scripts/create_release.sh
+!scripts/README.md
+
 /test
 .vscode/launch.json
 .vscode/settings.json
@@ -247,3 +253,10 @@ Output/
 *.exe
 nuitka-crash-report.xml
 /nuitka/*
+
+# Build and release directories
+/release/
+/release_notes.md
+*.dmg
+*.pkg
+*.app

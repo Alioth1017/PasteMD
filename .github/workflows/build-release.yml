@@ -1,0 +1,167 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., 0.1.6.3)'
+        required: true
+        default: '0.1.6.3'
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install nuitka ordered-set
+    
+    - name: Build with Nuitka
+      run: |
+        python -m nuitka --standalone --onedir --output-dir=nuitka --output-filename=PasteMD.exe --windows-icon-from-ico=assets/icons/logo.ico --company-name="RichQAQ" --product-name="PasteMD" --file-version="${{ github.event.inputs.version || '0.1.6.3' }}" --product-version="${{ github.event.inputs.version || '0.1.6.3' }}" --file-description="Markdown to Word/Excel clipboard tool" --copyright="Copyright (c) 2024 RichQAQ" --windows-console-mode=disable --enable-plugin=tk-inter --include-data-dir=pastemd/lua=pastemd/lua --include-data-dir=pastemd/i18n/locales=pastemd/i18n/locales --include-data-dir=assets/icons=assets/icons --follow-imports --assume-yes-for-downloads pastemd/__main__.py
+    
+    - name: Download Inno Setup
+      run: |
+        curl -L -o innosetup.exe "https://jrsoftware.org/download.php/is.exe"
+        .\innosetup.exe /VERYSILENT /SUPPRESSMSGBOXES /NORESTART /SP-
+        Start-Sleep -Seconds 30
+    
+    - name: Build Installer
+      run: |
+        & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer.iss
+    
+    - name: Upload Windows Installer
+      uses: actions/upload-artifact@v4
+      with:
+        name: windows-installer
+        path: Output/PasteMD_pandoc-Setup_*.exe
+    
+    - name: Upload Windows Build
+      uses: actions/upload-artifact@v4
+      with:
+        name: windows-build
+        path: nuitka/main.dist/
+
+  build-macos:
+    runs-on: macos-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pyinstaller
+    
+    - name: Build with PyInstaller
+      run: |
+        pyinstaller --name=PasteMD --windowed --onefile --icon=assets/icons/logo.png --add-data="pastemd/lua:pastemd/lua" --add-data="pastemd/i18n/locales:pastemd/i18n/locales" --add-data="assets/icons:assets/icons" --hidden-import=pystray._appkit --hidden-import=PIL._tkinter_finder pastemd/__main__.py
+    
+    - name: Create DMG
+      run: |
+        brew install create-dmg
+        mkdir -p dist-dmg
+        cp -r dist/PasteMD.app dist-dmg/
+        create-dmg --volname "PasteMD" --window-pos 200 120 --window-size 600 300 --icon-size 100 --app-drop-link 425 120 "PasteMD-macOS.dmg" "dist-dmg/" || true
+    
+    - name: Upload macOS Build
+      uses: actions/upload-artifact@v4
+      with:
+        name: macos-build
+        path: |
+          dist/PasteMD.app
+          PasteMD-macOS.dmg
+
+  create-release:
+    needs: [build-windows, build-macos]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
+    
+    permissions:
+      contents: write
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Download Windows Installer
+      uses: actions/download-artifact@v4
+      with:
+        name: windows-installer
+        path: release/
+    
+    - name: Download macOS Build
+      uses: actions/download-artifact@v4
+      with:
+        name: macos-build
+        path: release/
+    
+    - name: Get version
+      id: get_version
+      run: |
+        if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+          echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+        else
+          echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+        fi
+    
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: v${{ steps.get_version.outputs.version }}
+        name: PasteMD ${{ steps.get_version.outputs.version }}
+        draft: true
+        prerelease: false
+        body: |
+          ## PasteMD ${{ steps.get_version.outputs.version }}
+          
+          ### Features
+          - Markdown to Word/WPS conversion
+          - Markdown table to Excel
+          - HTML rich text support
+          - System tray integration
+          - Multi-language support (中文/English)
+          
+          ### Installation
+          
+          #### Windows
+          1. Download `PasteMD_pandoc-Setup_v${{ steps.get_version.outputs.version }}.exe`
+          2. Run the installer
+          3. Make sure Pandoc is installed: https://pandoc.org/installing.html
+          
+          #### macOS
+          1. Download `PasteMD-macOS.dmg`
+          2. Open the DMG and drag PasteMD to Applications
+          3. Install Pandoc: `brew install pandoc`
+          
+          ### Requirements
+          - Pandoc 2.0+ (required)
+          - Python 3.12+ (for development only)
+          
+          ### Changelog
+          See full changelog in the repository.
+        files: |
+          release/**/*
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
