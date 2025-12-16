@@ -35,7 +35,8 @@ DefaultDirName={autopf}\{#MyAppName}
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
-Name: "chinesesimplified"; MessagesFile: "compiler:Languages\ChineseSimplified.isl"
+; Note: ChineseSimplified language file is not included in all Inno Setup installations
+; Name: "chinesesimplified"; MessagesFile: "compiler:Languages\ChineseSimplified.isl"
 
 
 [CustomMessages]
@@ -44,10 +45,11 @@ english.AdditionalOptions=Additional options:
 english.AutoStartup=Start automatically with Windows
 english.RunAfterInstall=Launch {#MyAppName} after installation
 
-chinesesimplified.CreateDesktopIcon=创建桌面快捷方式
-chinesesimplified.AdditionalOptions=其他选项：
-chinesesimplified.AutoStartup=开机自启
-chinesesimplified.RunAfterInstall=安装完成后运行 {#MyAppName}
+; Chinese translations commented out since language file may not be available
+; chinesesimplified.CreateDesktopIcon=创建桌面快捷方式
+; chinesesimplified.AdditionalOptions=其他选项：
+; chinesesimplified.AutoStartup=开机自启
+; chinesesimplified.RunAfterInstall=安装完成后运行 {#MyAppName}
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalOptions}"
