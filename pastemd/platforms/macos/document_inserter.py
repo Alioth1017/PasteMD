@@ -82,29 +82,71 @@ class MacOSWordInserter(DocumentInserter):
             process.communicate(content.encode('utf-8'))
             log("[MacOSWordInserter] Content copied to clipboard")
             
-            # 4. 使用 Word 的 AppleScript 粘贴命令（而不是键盘快捷键）
+            # 4. 执行粘贴：优先针对 Microsoft Word 的 AppleScript；若非 Word 前台则回退到通用粘贴
             log("[MacOSWordInserter] Delaying 0.3s before paste...")
             time.sleep(0.3)
-            
-            script = '''
-            tell application "Microsoft Word"
-                activate
-                delay 0.2
-                tell active document
-                    paste
+
+            # 检测前台应用名称
+            front_app_name = None
+            try:
+                front_app_script = '''
+                tell application "System Events"
+                    set frontApp to first application process whose frontmost is true
+                    return name of frontApp
                 end tell
-            end tell
-            '''
-            
-            log("[MacOSWordInserter] *** EXECUTING AppleScript paste command ***")
-            result = subprocess.run(
-                ['osascript', '-e', script],
-                capture_output=True,
-                text=True,
-                timeout=5
-            )
-            log("[MacOSWordInserter] *** COMPLETED AppleScript paste command ***")
-            
+                '''
+                fa = subprocess.run(
+                    ['osascript', '-e', front_app_script],
+                    capture_output=True,
+                    text=True,
+                    timeout=2
+                )
+                if fa.returncode == 0:
+                    front_app_name = (fa.stdout or '').strip()
+            except Exception:
+                front_app_name = None
+
+            use_word_script = bool(front_app_name and 'word' in front_app_name.lower())
+
+            if use_word_script:
+                script = '''
+                tell application "Microsoft Word"
+                    activate
+                    delay 0.2
+                    tell active document
+                        paste
+                    end tell
+                end tell
+                '''
+                log("[MacOSWordInserter] *** EXECUTING AppleScript paste command (Word) ***")
+                result = subprocess.run(
+                    ['osascript', '-e', script],
+                    capture_output=True,
+                    text=True,
+                    timeout=5
+                )
+                log("[MacOSWordInserter] *** COMPLETED AppleScript paste command ***")
+                # 若 Word AppleScript 失败，继续回退到通用粘贴
+                if result.returncode != 0:
+                    log(f"[MacOSWordInserter] Word AppleScript failed, falling back: {result.stderr}")
+                    use_word_script = False
+
+            if not use_word_script:
+                # 通用粘贴：向当前前台应用发送 Command+V
+                generic_script = '''
+                tell application "System Events"
+                    keystroke "v" using command down
+                end tell
+                '''
+                log("[MacOSWordInserter] *** EXECUTING generic paste (Cmd+V) ***")
+                result = subprocess.run(
+                    ['osascript', '-e', generic_script],
+                    capture_output=True,
+                    text=True,
+                    timeout=5
+                )
+                log("[MacOSWordInserter] *** COMPLETED generic paste ***")
+
             # 再延迟一下确保粘贴完成
             log("[MacOSWordInserter] Delaying 0.1s after paste...")
             time.sleep(0.1)
@@ -136,10 +178,11 @@ class MacOSWordInserter(DocumentInserter):
                     log(f"[MacOSWordInserter] Warning: Failed to restore clipboard: {e}")
 
     def is_available(self) -> bool:
-        """检查 Microsoft Word 是否可用"""
+        """检查 Word/WPS 类应用是否可用"""
         script = '''
         tell application "System Events"
-            return (name of processes) contains "Microsoft Word"
+            set pnames to name of processes
+            return (pnames contains "Microsoft Word") or (pnames contains "WPS Office")
         end tell
         '''
         result = subprocess.run(
