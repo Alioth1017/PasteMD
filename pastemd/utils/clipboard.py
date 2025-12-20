@@ -45,10 +45,13 @@ def _try_read_cf_html(wait_ms: int, interval_ms: int) -> bytes | str | None:
 
         try:
             try:
-                available = bool(wc.IsClipboardFormatAvailable(fmt))
+                available: bool | None = bool(wc.IsClipboardFormatAvailable(fmt))
             except Exception as exc:
                 last_error = exc
-                available = False
+                available = None
+
+            if available is False:
+                return None
 
             if available:
                 try:
