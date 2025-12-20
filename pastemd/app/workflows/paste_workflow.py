@@ -9,7 +9,6 @@ from ...utils.win32.detector import detect_active_app
 from ...utils.clipboard import (
     get_clipboard_text,
     is_clipboard_empty,
-    is_clipboard_html,
     get_clipboard_html,
     read_markdown_files_from_clipboard,
 )
@@ -54,24 +53,23 @@ class PasteWorkflow:
             # 1. 首先检查剪贴板文本（优先处理文本）
             if not is_clipboard_empty():
                 # 剪贴板有文本内容，走原有逻辑
-                # 2.1 检测是否为 HTML 富文本，并尝试识别其结构
-                is_html = is_clipboard_html()
+                # 2.1 优先尝试读取 HTML 富文本（内部包含短窗口轮询等待），失败再降级 Markdown
                 html_text = None
                 should_use_html = False
-                if is_html:
-                    try:
-                        html_text = get_clipboard_html(config)
-                        is_plain = is_plain_html_fragment(html_text)
-                        log(f"Clipboard contains HTML (plain_fragment={is_plain})")
-                        if not is_plain:
-                            should_use_html = True
-                        else:
-                            log("HTML fragment looks like Markdown, fallback to Markdown flow.")
-                    except ClipboardError as e:
-                        log(f"Detected HTML clipboard data but failed to read fragment: {e}")
-                        is_html = False
-                else:
-                    log("Clipboard contains HTML: False")
+                try:
+                    html_text = get_clipboard_html(config)
+                    is_plain = is_plain_html_fragment(html_text)
+                    log(f"Clipboard contains HTML (plain_fragment={is_plain})")
+                    if not is_plain:
+                        should_use_html = True
+                    else:
+                        log("HTML fragment looks like Markdown, fallback to Markdown flow.")
+                except ClipboardError as e:
+                    message = str(e)
+                    if message.startswith("No HTML format data in clipboard"):
+                        log("Clipboard contains HTML: False")
+                    else:
+                        log(f"Clipboard HTML read failed: {e}")
                 
                 # 3. 检测当前活动应用
                 target = detect_active_app()
@@ -404,7 +402,7 @@ class PasteWorkflow:
         """
         # 1. 检测文件行数，如果较大则提前提示用户转换已开始
         line_count = md_text.count("\n") + 1
-        if line_count >= 100:
+        if line_count >= 1000:
             self.notification_manager.notify(
                 "PasteMD",
                 t("workflow.markdown.conversion_started", lines=line_count),

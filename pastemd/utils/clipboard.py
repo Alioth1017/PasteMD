@@ -12,6 +12,64 @@ from ..core.errors import ClipboardError
 from ..core.state import app_state
 from .html_formatter import clean_html_content
 from ..utils.logging import log
+from ..core.constants import CLIPBOARD_HTML_WAIT_MS, CLIPBOARD_POLL_INTERVAL_MS
+
+
+def _try_read_cf_html(wait_ms: int, interval_ms: int) -> bytes | str | None:
+    """
+    在短窗口内轮询读取 CF_HTML（"HTML Format"）。
+
+    目的：
+    - 避免 OpenClipboard 竞争/占用导致的瞬时失败
+    - 避免延迟渲染（IsClipboardFormatAvailable 初始为 False）导致的误判
+
+    Returns:
+        CF_HTML 原始数据（bytes 或 str），失败返回 None（不抛异常）。
+    """
+    try:
+        fmt = wc.RegisterClipboardFormat("HTML Format")
+    except Exception:
+        return None
+
+    deadline = time.monotonic() + (wait_ms / 1000.0)
+    interval_s = max(1, interval_ms) / 1000.0
+
+    last_error: Exception | None = None
+    while time.monotonic() < deadline:
+        try:
+            wc.OpenClipboard()
+        except Exception as exc:
+            last_error = exc
+            time.sleep(interval_s)
+            continue
+
+        try:
+            try:
+                available = bool(wc.IsClipboardFormatAvailable(fmt))
+            except Exception as exc:
+                last_error = exc
+                available = False
+
+            if available:
+                try:
+                    data = wc.GetClipboardData(fmt)
+                    if data is None:
+                        last_error = ValueError("CF_HTML data is None")
+                    else:
+                        return data
+                except Exception as exc:
+                    last_error = exc
+        finally:
+            try:
+                wc.CloseClipboard()
+            except Exception:
+                pass
+
+        time.sleep(interval_s)
+
+    if last_error is not None:
+        log(f"CF_HTML read timed out after {wait_ms}ms: {last_error}")
+    return None
 
 
 def get_clipboard_text() -> str:
@@ -49,60 +107,13 @@ def is_clipboard_empty() -> bool:
 
 def is_clipboard_html() -> bool:
     """
-    检查剪切板内容是否为 HTML 富文本 (CF_HTML / "HTML Format")
+    检查剪贴板内容是否为 HTML 富文本 (CF_HTML / "HTML Format")
 
     Returns:
         True 如果剪贴板中存在 HTML 富文本格式；否则 False
     """
-    # 优先使用 pywin32；若不可用则退回 ctypes
-    try:
-        fmt = wc.RegisterClipboardFormat("HTML Format")
-
-        # 某些应用会暂时占用剪贴板，这里做几次轻量重试
-        for _ in range(3):
-            try:
-                wc.OpenClipboard()
-                try:
-                    return bool(wc.IsClipboardFormatAvailable(fmt))
-                finally:
-                    wc.CloseClipboard()
-            except Exception:
-                time.sleep(0.03)
-        return False
-    except Exception:
-        # 无 pywin32 或异常，使用 ctypes 直连 Win32 API
-        import ctypes
-        from ctypes import wintypes
-
-        user32 = ctypes.WinDLL("user32", use_last_error=True)
-        RegisterClipboardFormatW = user32.RegisterClipboardFormatW
-        RegisterClipboardFormatW.argtypes = [wintypes.LPCWSTR]
-        RegisterClipboardFormatW.restype = wintypes.UINT
-
-        OpenClipboard = user32.OpenClipboard
-        OpenClipboard.argtypes = [wintypes.HWND]
-        OpenClipboard.restype = wintypes.BOOL
-
-        CloseClipboard = user32.CloseClipboard
-        CloseClipboard.argtypes = []
-        CloseClipboard.restype = wintypes.BOOL
-
-        IsClipboardFormatAvailable = user32.IsClipboardFormatAvailable
-        IsClipboardFormatAvailable.argtypes = [wintypes.UINT]
-        IsClipboardFormatAvailable.restype = wintypes.BOOL
-
-        fmt = RegisterClipboardFormatW("HTML Format")
-        if not fmt:
-            return False
-
-        for _ in range(3):
-            if OpenClipboard(None):
-                try:
-                    return bool(IsClipboardFormatAvailable(fmt))
-                finally:
-                    CloseClipboard()
-            time.sleep(0.03)
-        return False
+    data = _try_read_cf_html(CLIPBOARD_HTML_WAIT_MS, CLIPBOARD_POLL_INTERVAL_MS)
+    return data is not None and data != "" and data != b""
 
 
 def get_clipboard_html(config: dict | None = None) -> str:
@@ -118,43 +129,75 @@ def get_clipboard_html(config: dict | None = None) -> str:
     Raises:
         ClipboardError: 剪贴板操作失败时
     """
-    try:
-        config = config or getattr(app_state, "config", {})
+    config = config or getattr(app_state, "config", {})
 
-        fmt = wc.RegisterClipboardFormat("HTML Format")
-        cf_html = None
-        
-        # 重试机制，避免剪贴板被占用
-        for _ in range(3):
-            try:
-                wc.OpenClipboard()
-                try:
-                    if wc.IsClipboardFormatAvailable(fmt):
-                        data = wc.GetClipboardData(fmt)
-                        # data 可能是 bytes 或 str
-                        if isinstance(data, bytes):
-                            cf_html = data.decode("utf-8", errors="ignore")
-                        else:
-                            cf_html = data
-                        break
-                finally:
-                    wc.CloseClipboard()
-            except Exception:
-                time.sleep(0.03)
-        
-        if not cf_html:
-            raise ClipboardError("No HTML format data in clipboard")
-        
+    data = _try_read_cf_html(CLIPBOARD_HTML_WAIT_MS, CLIPBOARD_POLL_INTERVAL_MS)
+    if data is None or data == "" or data == b"":
+        raise ClipboardError("No HTML format data in clipboard")
+
+    try:
         # 解析 CF_HTML 格式，提取 Fragment
-        fragment = _extract_html_fragment(cf_html)
-        
+        if isinstance(data, bytes):
+            fragment = _extract_html_fragment_bytes(data)
+        else:
+            fragment = _extract_html_fragment(data)
+
         # 清理 SVG 等不可用内容
         cleaned = clean_html_content(fragment, config.get("html_formatting"))
-        
         return cleaned
-        
     except Exception as e:
-        raise ClipboardError(f"Failed to read HTML from clipboard: {e}")
+        raise ClipboardError(f"Failed to read HTML from clipboard: {e}") from e
+
+
+def _extract_html_fragment_bytes(cf_html_bytes: bytes) -> str:
+    """
+    从 CF_HTML bytes 中提取 Fragment（StartFragment/EndFragment 通常为字节偏移）。
+
+    - 优先按 bytes 偏移截取，避免非 ASCII 导致的 str 偏移错位。
+    - 失败时回退到 <!--StartFragment--> 锚点提取。
+    """
+    meta: dict[str, str] = {}
+    for raw_line in cf_html_bytes.splitlines():
+        stripped = raw_line.strip()
+        if stripped.startswith(b"<!--"):
+            break
+        if b":" in raw_line:
+            k, v = raw_line.split(b":", 1)
+            key = k.decode("ascii", errors="ignore").strip()
+            val = v.decode("ascii", errors="ignore").strip()
+            if key:
+                meta[key] = val
+
+    sf = meta.get("StartFragment", "")
+    ef = meta.get("EndFragment", "")
+    if sf.isdigit() and ef.isdigit():
+        try:
+            start_fragment = int(sf)
+            end_fragment = int(ef)
+            if 0 <= start_fragment <= end_fragment <= len(cf_html_bytes):
+                return cf_html_bytes[start_fragment:end_fragment].decode("utf-8", errors="ignore")
+        except Exception:
+            pass
+
+    m = re.search(
+        rb"<!--StartFragment-->(.*)<!--EndFragment-->",
+        cf_html_bytes,
+        flags=re.S,
+    )
+    if m:
+        return m.group(1).decode("utf-8", errors="ignore")
+
+    start_html = meta.get("StartHTML", "0")
+    end_html = meta.get("EndHTML", str(len(cf_html_bytes)))
+    try:
+        start = int(start_html) if start_html.isdigit() else 0
+        end = int(end_html) if end_html.isdigit() else len(cf_html_bytes)
+        if 0 <= start <= end <= len(cf_html_bytes):
+            return cf_html_bytes[start:end].decode("utf-8", errors="ignore")
+    except Exception:
+        pass
+
+    return cf_html_bytes.decode("utf-8", errors="ignore")
 
 
 def _extract_html_fragment(cf_html: str) -> str:
