@@ -101,7 +101,7 @@ Test description:
 ## Getting Started
 
 1. Download an executable from the [Releases page](https://github.com/RICHQAQ/PasteMD/releases/):
-   - **PasteMD_vx.x.x.exe** — portable build, requires Pandoc to be installed and accessible from `PATH`.
+   - ~~**PasteMD_vx.x.x.exe** — portable build, requires Pandoc to be installed and accessible from `PATH`.~~ (no longer provided; please build from source if needed)
    - **PasteMD_pandoc-Setup.exe** — bundled installer that ships with Pandoc and works out of the box.
 2. Open Word, WPS, or Excel and place the caret where you want to paste.
 3. Copy Markdown or HTML-rich text, then press the global hotkey (`Ctrl+Shift+B` by default).
@@ -126,7 +126,7 @@ The first launch creates a `config.json` file. Edit it directly, then use the tr
   "notify": true,
   "enable_excel": true,
   "excel_keep_format": true,
-  "auto_open_on_no_app": true,
+  "no_app_action": "open",
   "md_disable_first_para_indent": true,
   "html_disable_first_para_indent": true,
   "html_formatting": {
@@ -149,7 +149,7 @@ Key fields:
 - `notify` — show system notifications when conversions finish.
 - `enable_excel` — detect Markdown tables and paste them into Excel automatically.
 - `excel_keep_format` — attempt to preserve bold/italic/code styles inside Excel.
-- `auto_open_on_no_app` — auto-create a document and open it with the default handler when no target app is detected.
+- `no_app_action` — action when no target app is detected. Values: `open` (auto open), `save` (save only), `clipboard` (copy file to clipboard), `none` (no action). Default: `open`.
 - `md_disable_first_para_indent` / `html_disable_first_para_indent` — normalize the first paragraph style to body text.
 - `html_formatting` — options for formatting HTML rich text before conversion.
   - `strikethrough_to_del` — convert strikethrough ~~ to `<del>` tags for proper rendering.
@@ -267,7 +267,7 @@ The Mermaid diagram will be rendered as an image and inserted into Word.
 
 - Show the current global hotkey (read-only).
 - Enable/disable the hotkey.
-- Toggle notifications, automatic document creation when no target app is found, and cursor movement to the end after paste.
+- Toggle notifications, set the action when no target app is detected, and toggle moving the caret to the end after paste.
 - Enable or disable Excel-specific features and formatting preservation.
 - Toggle keeping generated DOCX files.
 - HTML Formatting: toggle conversion of strikethrough ~~ to `<del>` tags for proper rendering.
@@ -317,7 +317,16 @@ Every star helps — thank you for sharing PasteMD with more users.
 
 ## ☕ Support & Donation
 
+
 If PasteMD saves you time, consider buying the author a coffee — your support helps prioritize fixes, enhancements, and new integrations.
+
+Also welcome to join the **PasteMD User Group** for discussion and support:
+
+<div align="center">
+  <img src="../../docs/img/qrcode.jpg" alt="PasteMD QQ Group QR Code" width="200" />
+  <br>
+  <sub>Scan to join the PasteMD QQ group</sub>
+</div>
 
 <img src="../../docs/gif/atri/flower.gif"
      alt="give you a flower"

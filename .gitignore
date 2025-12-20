@@ -248,5 +248,9 @@ Output/
 nuitka-crash-report.xml
 /nuitka/*
 
+# AI agent folders
+.claude/
+.kilocode/
 
+# macOS
 **/.DS_Store
