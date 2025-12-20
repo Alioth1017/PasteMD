@@ -136,7 +136,7 @@
   "notify": true,
   "enable_excel": true,
   "excel_keep_format": true,
-  "auto_open_on_no_app": true,
+  "no_app_action": "open",
   "md_disable_first_para_indent": true,
   "html_disable_first_para_indent": true,
   "html_formatting": {
@@ -159,7 +159,7 @@
 * `notify`：是否显示系统通知。
 * **`enable_excel`**：**✨ 新功能** - 是否启用智能识别 Markdown 表格并粘贴到 Excel（默认 true）。
 * **`excel_keep_format`**：**✨ 新功能** - Excel 粘贴时是否保留 Markdown 格式（粗体、斜体、代码等），默认 true。
-* **`auto_open_on_no_app`**：**✨ 新功能** 当未检测到目标应用（如 Word/Excel）时，是否自动创建文件并用系统默认应用打开（默认 true）。
+* **`no_app_action`**：**✨ 新功能** 当未检测到目标应用（如 Word/Excel）时的默认动作（默认 `"open"`）。可选值：`open`=自动打开、`save`=仅保存、`clipboard`=复制文件到剪贴板、`none`=无操作。
 * **`md_disable_first_para_indent`**： - Markdown 转换时是否禁用第一段的特殊格式，统一为正文样式（默认 true）。
 * **`html_formatting`**： - HTML 富文本转换时的格式化选项。
   * **`strikethrough_to_del`**： - 是否将删除线 ~~ 转换为 `<del>` 标签，使得转换正确（默认 true）。
@@ -281,7 +281,7 @@ Mermaid 图表将被渲染为图片并插入到 Word 文档中。
 * 快捷显示：当前全局热键（只读）。
 * 启用热键：开/关全局热键。
 * 弹窗通知：开/关系统通知。
-* 无应用时自动打开：当未检测到 Word/Excel 时是否自动创建并用默认应用打开。
+* 无应用时动作：当未检测到 Word/WPS/Excel 时的默认动作（自动打开/仅保存/复制到剪贴板/无操作）。
 * 插入后移动光标到末尾：插入内容后是否将光标移动到插入内容的末尾。
 * HTML 格式化：切换 **删除线 ~~ 转换为 `<del>`** 等 HTML 自动整理，使得可以正确转换（防止部分网页没有解析这些格式，导致从网页复制粘贴无法显示这些格式）。
 * 实验性功能：启用/禁用 **保留原始数学公式** 等实验性功能。
