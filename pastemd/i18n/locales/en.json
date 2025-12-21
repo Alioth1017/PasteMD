@@ -218,8 +218,17 @@
     "tray.status.no_app_action_none": "Set to: No action",
     "placer.win32_word.insert_failed": "Word insertion failed: {error}\nPlease check if Word is running properly",
     "placer.win32_wps.insert_failed": "WPS insertion failed: {error}\nPlease check if WPS is running properly, background processes will be cleaned if necessary",
+    "placer.win32_excel.insert_failed": "Excel insertion failed: {error}\nPlease check if Excel is running properly",
+    "placer.win32_excel.insert_failed_unknown": "Excel insertion failed (unknown reason)",
+    "placer.win32_wps_excel.insert_failed": "WPS Spreadsheet insertion failed: {error}\nPlease check if WPS Spreadsheet is running properly, background processes will be cleaned if necessary",
+    "placer.win32_wps_excel.insert_failed_unknown": "WPS Spreadsheet insertion failed (unknown reason)",
     "placer.macos_word.insert_failed": "Word insertion failed: {error}\n\nPlease check:\n1. Is Word open with a document?\n2. System Preferences → Privacy → Automation → Allow PasteMD to control Word\n3. Does Word have 'Full Disk Access' permission?",
     "placer.macos_word.applescript_failed": "AppleScript execution failed",
     "placer.macos_word.timeout": "AppleScript execution timeout (30 seconds)",
-    "placer.macos_wps.not_supported": "macOS WPS does not support automatic insertion\n\nSolutions:\n1. Use Microsoft Word (recommended)\n2. Or set no_app_action to 'clipboard' in settings,\n   then manually paste the generated file into WPS"
+    "placer.macos_excel.insert_failed": "Excel insertion failed: {error}\n\nPlease check:\n1. Is Excel open with a workbook?\n2. System Preferences → Privacy → Automation → Allow PasteMD to control Excel\n3. Does Excel have 'Full Disk Access' permission?",
+    "placer.macos_excel.applescript_failed": "AppleScript execution failed",
+    "placer.macos_excel.script_execution_failed": "AppleScript execution failed: {error}",
+    "placer.macos_excel.script_timeout": "AppleScript execution timeout (30 seconds)",
+    "placer.macos_wps.not_supported": "macOS WPS does not support automatic insertion\n\nSolutions:\n1. Use Microsoft Word (recommended)\n2. Or set no_app_action to 'clipboard' in settings,\n   then manually paste the generated file into WPS",
+    "placer.macos_wps_excel.not_supported": "macOS WPS Spreadsheet does not support automatic insertion\n\nSolutions:\n1. Use Microsoft Excel (recommended)\n2. Or set no_app_action to 'clipboard' in settings,\n   then manually paste the generated file into WPS Spreadsheet"
 }

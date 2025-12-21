@@ -1,51 +1,27 @@
-"""Base class for spreadsheet inserters."""
+"""Base classes for spreadsheet placement."""
 
 from abc import ABC, abstractmethod
-from typing import Any, List, Union
+from typing import List
+from ...core.types import PlacementResult
 
 
-class BaseTableInserter(ABC):
-    """表格插入器基类（用于 Excel/WPS 表格）"""
-    
-    def __init__(self, prog_id: Union[str, List[str]], app_name: str):
-        """
-        初始化插入器
-        
-        Args:
-            prog_id: COM ProgID 或 ProgID 列表 (如 "Excel.Application" 或 ["ket.Application"])
-            app_name: 应用名称 (如 "Excel" 或 "WPS 表格")
-        """
-        # 统一转为列表处理
-        self.prog_ids = [prog_id] if isinstance(prog_id, str) else prog_id
-        self.prog_id = self.prog_ids[0]  # 保持向后兼容
-        self.app_name = app_name
+class BaseSpreadsheetPlacer(ABC):
+    """表格内容落地器基类"""
     
     @abstractmethod
-    def insert(self, table_data: List[List[str]], keep_format: bool = True) -> bool:
+    def place(self, table_data: List[List[str]], config: dict) -> PlacementResult:
         """
-        将表格数据插入到应用当前光标位置
+        将表格数据落地到目标应用
         
         Args:
             table_data: 二维数组表格数据
-            keep_format: 是否保留 Markdown 格式（粗体、斜体等）
+            config: 配置字典（包含 keep_format 等选项）
             
         Returns:
-            True 如果插入成功
+            PlacementResult: 落地结果
             
-        Raises:
-            InsertError: 插入失败时
-        """
-        pass
-    
-    @abstractmethod
-    def _get_application(self) -> Any:
-        """
-        获取应用程序实例
-        
-        Returns:
-            应用程序对象
-            
-        Raises:
-            Exception: 无法获取实例时
+        Note:
+            ❌ 不做优雅降级,失败即返回错误
+            ✅ 由 Workflow 决定如何处理失败(通知用户/记录日志)
         """
         pass

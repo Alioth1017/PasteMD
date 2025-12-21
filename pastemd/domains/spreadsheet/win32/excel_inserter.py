@@ -1,14 +1,26 @@
 """Excel and WPS spreadsheet inserters."""
 
-from typing import List
-from .base import BaseTableInserter
-from .formatting import CellFormat
-from ...core.errors import InsertError
-from ...utils.logging import log
+from typing import List, Union
+from ..formatting import CellFormat
+from ....core.errors import InsertError
+from ....utils.logging import log
 
 
-class BaseExcelInserter(BaseTableInserter):
+class BaseExcelInserter:
     """Excel 表格插入器基类"""
+    
+    def __init__(self, prog_id: Union[str, List[str]], app_name: str):
+        """
+        初始化插入器
+        
+        Args:
+            prog_id: COM ProgID 或 ProgID 列表 (如 "Excel.Application" 或 ["ket.Application"])
+            app_name: 应用名称 (如 "Excel" 或 "WPS 表格")
+        """
+        # 统一转为列表处理
+        self.prog_ids = [prog_id] if isinstance(prog_id, str) else prog_id
+        self.prog_id = self.prog_ids[0]  # 保持向后兼容
+        self.app_name = app_name
     
     def insert(self, table_data: List[List[str]], keep_format: bool = True) -> bool:
         """

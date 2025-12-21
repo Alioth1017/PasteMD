@@ -218,8 +218,17 @@
     "tray.status.no_app_action_none": "已设置：无操作",
     "placer.win32_word.insert_failed": "Word 插入失败: {error}\n请检查 Word 是否正常运行",
     "placer.win32_wps.insert_failed": "WPS 插入失败: {error}\n请检查 WPS 是否正常运行，必要时会自动清理后台进程",
+    "placer.win32_excel.insert_failed": "Excel 插入失败: {error}\n请检查 Excel 是否正常运行",
+    "placer.win32_excel.insert_failed_unknown": "Excel 插入失败（未知原因）",
+    "placer.win32_wps_excel.insert_failed": "WPS 表格插入失败: {error}\n请检查 WPS 表格是否正常运行，必要时会自动清理后台进程",
+    "placer.win32_wps_excel.insert_failed_unknown": "WPS 表格插入失败（未知原因）",
     "placer.macos_word.insert_failed": "Word 插入失败: {error}\n\n请检查:\n1. Word 是否打开且有文档\n2. 系统偏好设置 → 隐私 → 自动化 → 允许 PasteMD 控制 Word\n3. Word 是否有'完全磁盘访问'权限",
     "placer.macos_word.applescript_failed": "AppleScript 执行失败",
     "placer.macos_word.timeout": "AppleScript 执行超时（30秒）",
-    "placer.macos_wps.not_supported": "macOS WPS 不支持自动插入功能\n\n解决方案:\n1. 使用 Microsoft Word(推荐)\n2. 或在配置中设置 no_app_action 为 'clipboard',\n   将生成的文件复制到剪贴板后手动粘贴到 WPS"
+    "placer.macos_excel.insert_failed": "Excel 插入失败: {error}\n\n请检查:\n1. Excel 是否打开且有工作簿\n2. 系统偏好设置 → 隐私 → 自动化 → 允许 PasteMD 控制 Excel\n3. Excel 是否有'完全磁盘访问'权限",
+    "placer.macos_excel.applescript_failed": "AppleScript 执行失败",
+    "placer.macos_excel.script_execution_failed": "AppleScript 执行失败: {error}",
+    "placer.macos_excel.script_timeout": "AppleScript 执行超时（30秒）",
+    "placer.macos_wps.not_supported": "macOS WPS 不支持自动插入功能\n\n解决方案:\n1. 使用 Microsoft Word(推荐)\n2. 或在配置中设置 no_app_action 为 'clipboard',\n   将生成的文件复制到剪贴板后手动粘贴到 WPS",
+    "placer.macos_wps_excel.not_supported": "macOS WPS 表格不支持自动插入功能\n\n解决方案:\n1. 使用 Microsoft Excel(推荐)\n2. 或在配置中设置 no_app_action 为 'clipboard',\n   将生成的文件复制到剪贴板后手动粘贴到 WPS 表格"
 }

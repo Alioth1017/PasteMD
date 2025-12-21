@@ -1,8 +1,8 @@
 from typing import List
-from .excel import BaseExcelInserter
-from ...utils.logging import log
-from ...utils.win32 import cleanup_background_wps_processes
-from ...core.errors import InsertError
+from .excel_inserter import BaseExcelInserter
+from ....utils.logging import log
+from ....utils.win32 import cleanup_background_wps_processes
+from ....core.errors import InsertError
 
 
 class WPSExcelInserter(BaseExcelInserter):

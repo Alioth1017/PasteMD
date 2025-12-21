@@ -22,8 +22,8 @@ from ...domains.document.word import WordInserter
 from ...domains.document.wps import WPSInserter
 from ...domains.document.generator import DocumentGeneratorService
 from ...domains.spreadsheet.parser import parse_markdown_table
-from ...domains.spreadsheet.excel import MSExcelInserter
-from ...domains.spreadsheet.wps_excel import WPSExcelInserter
+from ...domains.spreadsheet.win32.excel_inserter import MSExcelInserter
+from ...domains.spreadsheet.win32.wps_excel_inserter import WPSExcelInserter
 from ...domains.notification.manager import NotificationManager
 from ...utils.fs import generate_output_path
 from ...utils.logging import log

@@ -1,0 +1,1 @@
+"""macOS spreadsheet placers."""

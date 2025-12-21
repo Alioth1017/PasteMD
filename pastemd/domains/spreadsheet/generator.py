@@ -1,6 +1,7 @@
 """Spreadsheet file generator - creates XLSX files from table data."""
 
 from typing import List
+from io import BytesIO
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment
 from openpyxl.utils import get_column_letter
@@ -13,20 +14,27 @@ from .formatting import CellFormat
 
 
 class SpreadsheetGenerator:
-    """表格生成器 - 生成 XLSX 文件（支持复杂格式）"""
+    """表格生成器 - 生成 XLSX 字节流（支持复杂格式）
+    
+    Note:
+        - 不负责保存文件（由 workflow 或其他模块负责）
+        - 只负责纯粹的格式转换和生成字节流
+    """
     
     @staticmethod
-    def generate_xlsx(table_data: List[List[str]], output_path: str, keep_format: bool = True) -> bool:
+    def generate_xlsx_bytes(table_data: List[List[str]], keep_format: bool = True) -> bytes:
         """
-        从表格数据生成 XLSX 文件（支持 Markdown 格式）
+        从表格数据生成 XLSX 字节流（支持 Markdown 格式）
         
         Args:
             table_data: 二维数组表格数据
-            output_path: 输出 XLSX 文件路径
             keep_format: 是否保留 Markdown 格式（粗体、斜体等）
             
         Returns:
-            True 如果成功生成
+            XLSX 文件的字节流
+            
+        Raises:
+            InsertError: 生成失败时
         """
         try:
             # 创建新的工作簿
@@ -36,9 +44,11 @@ class SpreadsheetGenerator:
             
             if not table_data:
                 log("Table data is empty, creating empty spreadsheet")
-                wb.save(output_path)
-                log(f"Successfully generated XLSX: {output_path}")
-                return True
+                # 保存到内存
+                buffer = BytesIO()
+                wb.save(buffer)
+                buffer.seek(0)
+                return buffer.read()
             
             # 设置样式
             header_fill = PatternFill(start_color="D3D3D3", end_color="D3D3D3", fill_type="solid")
@@ -166,10 +176,13 @@ class SpreadsheetGenerator:
                 adjusted_width = min(max(max_length + 2, 10), 50)
                 ws.column_dimensions[col_letter].width = adjusted_width
             
-            # 保存文件
-            wb.save(output_path)
-            log(f"Successfully generated XLSX with formatting: {output_path}")
-            return True
+            # 保存到内存
+            buffer = BytesIO()
+            wb.save(buffer)
+            buffer.seek(0)
+            xlsx_bytes = buffer.read()
+            log(f"Successfully generated XLSX bytes: {len(xlsx_bytes)} bytes")
+            return xlsx_bytes
             
         except Exception as e:
             log(f"Failed to generate XLSX: {e}")
