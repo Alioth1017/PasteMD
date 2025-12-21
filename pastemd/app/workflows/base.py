@@ -14,13 +14,17 @@ class BaseWorkflow(ABC):
     
     def __init__(self):
         # 轻量级初始化
-        self.config = app_state.config
         self.notification_manager = NotificationManager()  # 复用单例
         
         # 延迟初始化(避免 Pandoc 开销)
         self._doc_generator = None
         self._sheet_generator = None
         self._markdown_preprocessor = None
+    
+    @property
+    def config(self):
+        """实时获取最新配置"""
+        return app_state.config
     
     @property
     def doc_generator(self):
@@ -38,10 +42,9 @@ class BaseWorkflow(ABC):
     
     @property
     def markdown_preprocessor(self):
-        """懒加载 Markdown Preprocessor"""
-        if self._markdown_preprocessor is None:
-            self._markdown_preprocessor = MarkdownPreprocessor(self.config)
-        return self._markdown_preprocessor
+        """每次创建新的 Markdown Preprocessor 以使用最新配置"""
+        # 不缓存，每次使用最新配置
+        return MarkdownPreprocessor(self.config)
     
     @abstractmethod
     def execute(self) -> None:

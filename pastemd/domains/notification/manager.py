@@ -72,15 +72,30 @@ def _secs_to_win11_duration(secs: int | float) -> str:
 
 
 class NotificationManager:
-    """通知管理器（异步队列 + 后台线程，不阻塞热键）"""
+    """通知管理器（异步队列 + 后台线程，不阻塞热键）- 单例模式"""
+
+    _instance = None
+    _lock = threading.Lock()
+
+    def __new__(cls, *args, **kwargs):
+        if cls._instance is None:
+            with cls._lock:
+                if cls._instance is None:
+                    cls._instance = super().__new__(cls)
+        return cls._instance
 
     def __init__(self, app_name: str = "PasteMD", max_queue: int = 30):
+        # 避免重复初始化
+        if hasattr(self, "_initialized"):
+            return
+        
         self.app_name = app_name
         self.icon_path = get_app_icon_path()
         self._q: "queue.Queue[tuple[str,str,bool]]" = queue.Queue(maxsize=max_queue)
         self._stop = threading.Event()
         self._worker = threading.Thread(target=self._worker_loop, name="NotifyWorker", daemon=True)
         self._worker.start()
+        self._initialized = True
 
     # ---- 公共接口：立即返回 ----
     def notify(self, title: str, message: str, ok: bool = True, **kwargs) -> None:
