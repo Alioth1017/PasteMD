@@ -20,8 +20,9 @@ if sys.platform == "darwin":
         get_clipboard_files,
         get_markdown_files_from_clipboard,
         read_markdown_files_from_clipboard,
-        read_file_with_encoding,
     )
+    # read_file_with_encoding 从共享模块导入
+    from .clipboard_file_utils import read_file_with_encoding
 elif sys.platform == "win32":
     from .win32.clipboard import (
         get_clipboard_text,
@@ -33,8 +34,9 @@ elif sys.platform == "win32":
         get_clipboard_files,
         get_markdown_files_from_clipboard,
         read_markdown_files_from_clipboard,
-        read_file_with_encoding,
     )
+    # read_file_with_encoding 从共享模块导入
+    from .clipboard_file_utils import read_file_with_encoding
 else:
     # 其他平台的后备实现（仅支持基本文本功能）
     import pyperclip

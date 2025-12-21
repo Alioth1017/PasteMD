@@ -11,6 +11,7 @@ import win32clipboard as wc
 from ...core.errors import ClipboardError
 from ...core.state import app_state
 from ..html_formatter import clean_html_content
+from ..clipboard_file_utils import read_file_with_encoding, filter_markdown_files, read_markdown_files
 from ...utils.logging import log
 from ...core.constants import CLIPBOARD_HTML_WAIT_MS, CLIPBOARD_POLL_INTERVAL_MS
 
@@ -428,85 +429,21 @@ def get_clipboard_files() -> list[str]:
     return file_paths
 
 
-def get_clipboard_files_macos() -> list[str]:
-    """
-    获取剪贴板中的文件路径列表（macOS 实现 - 预留）
-    
-    Returns:
-        文件绝对路径列表（当前返回空列表）
-    """
-    # TODO: macOS 实现
-    log("macOS clipboard files support not implemented yet")
-    return []
-
+# ============================================================
+# 剪贴板文件检测与读取（仅 Windows）
+# ============================================================
 
 def get_markdown_files_from_clipboard() -> list[str]:
     """
     从剪贴板获取 Markdown 文件路径列表
     
     只返回扩展名为 .md 或 .markdown 的文件
-    根据平台选择实现（Windows 或 macOS）
     
     Returns:
         Markdown 文件的绝对路径列表（按文件名排序）
     """
-    # 根据平台获取剪贴板文件列表
-    if sys.platform == "win32":
-        all_files = get_clipboard_files()
-    elif sys.platform == "darwin":
-        all_files = get_clipboard_files_macos()
-    else:
-        log(f"Unsupported platform for clipboard files: {sys.platform}")
-        return []
-    
-    # 过滤 Markdown 文件
-    md_extensions = (".md", ".markdown")
-    md_files = [
-        f for f in all_files
-        if os.path.isfile(f) and f.lower().endswith(md_extensions)
-    ]
-    
-    # 按文件名排序
-    md_files.sort(key=lambda x: os.path.basename(x).lower())
-    
-    log(f"Found {len(md_files)} Markdown files in clipboard")
-    return md_files
-
-
-def read_file_with_encoding(file_path: str) -> str:
-    """
-    读取文件内容，自动检测 UTF-8 或 GBK 编码
-    
-    尝试顺序：utf-8 -> gbk -> gb2312 -> utf-8-sig
-    
-    Args:
-        file_path: 文件路径
-        
-    Returns:
-        文件内容字符串
-        
-    Raises:
-        ClipboardError: 读取失败时
-    """
-    encodings = ["utf-8", "gbk", "gb2312", "utf-8-sig"]
-    
-    for encoding in encodings:
-        try:
-            with open(file_path, "r", encoding=encoding) as f:
-                content = f.read()
-                log(f"Successfully read file '{file_path}' with encoding: {encoding}")
-                return content
-        except UnicodeDecodeError:
-            log(f"Failed to decode '{file_path}' with encoding: {encoding}")
-            continue
-        except Exception as e:
-            log(f"Error reading file '{file_path}' with encoding {encoding}: {e}")
-            continue
-    
-    # 所有编码都失败
-    raise ClipboardError(
-        f"Failed to read file '{file_path}' with any supported encoding: {encodings}"
-    )
+    all_files = get_clipboard_files()
+    return filter_markdown_files(all_files)
 
 
 def read_markdown_files_from_clipboard() -> tuple[bool, list[tuple[str, str]], list[tuple[str, str]]]:
@@ -523,24 +460,4 @@ def read_markdown_files_from_clipboard() -> tuple[bool, list[tuple[str, str]], l
         - errors: [(filename, error_message), ...] 读取失败的文件和错误信息
     """
     md_files = get_markdown_files_from_clipboard()
-    
-    if not md_files:
-        return False, [], []
-    
-    files_data: list[tuple[str, str]] = []
-    errors: list[tuple[str, str]] = []
-    
-    for file_path in md_files:
-        filename = os.path.basename(file_path)
-        try:
-            content = read_file_with_encoding(file_path)
-            files_data.append((filename, content))
-            log(f"Successfully read MD file: {filename}")
-        except Exception as e:
-            # 记录失败信息，但继续处理其他文件
-            error_msg = str(e)
-            log(f"Failed to read MD file '{filename}': {error_msg}")
-            errors.append((filename, error_msg))
-    
-    # found 为 True 当且仅当至少成功读取了一个文件
-    return len(files_data) > 0, files_data, errors
+    return read_markdown_files(md_files)
