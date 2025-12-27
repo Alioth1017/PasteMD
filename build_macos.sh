@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
+# build_macos.sh
 # PasteMD macOS Nuitka 打包脚本（带签名 / 固定 Bundle ID / 固定安装路径）
 # 目的：
 # 1) 用“固定的证书身份”签名，减少每次构建都被 macOS 当成“新应用”的概率（权限更容易沿用）
 # 2) 确保 CFBundleIdentifier（Bundle ID）稳定
-# 3) 将 .app 复制到固定目录（~/Applications），进一步提升权限复用稳定性
+# 3) 将 .app 复制到固定目录（/Applications），进一步提升权限复用稳定性
 
 set -euo pipefail  # 遇到错误退出；未定义变量当错误；管道错误会传递
 
@@ -30,7 +31,7 @@ OUT_DIR="nuitka/macos"
 ENTRY="PasteMD.py"
 
 # 你希望把 app 安装到哪里（开发期建议固定路径，权限更稳）
-INSTALL_DIR="${INSTALL_DIR:-$HOME/Applications}"
+INSTALL_DIR="${INSTALL_DIR:-/Applications}"
 
 # 是否静默（默认 0：不静默，便于排错；设置 QUIET=1 ./build_macos.sh 可静默）
 QUIET="${QUIET:-0}"
@@ -41,6 +42,16 @@ PYTHON_BIN="${PYTHON_BIN:-python}"
 ####################
 # 基础环境检查     #
 ####################
+echo "检查 Bundle ID：$BUNDLE_ID"
+if [[ -z "$BUNDLE_ID" ]]; then
+  echo "错误：BUNDLE_ID 不能为空。"
+  exit 1
+fi
+if [[ "$BUNDLE_ID" != *.* ]] || [[ ! "$BUNDLE_ID" =~ ^[A-Za-z0-9][A-Za-z0-9.-]*[A-Za-z0-9]$ ]]; then
+  echo "错误：BUNDLE_ID 格式不合法，建议使用反向域名格式（例如 com.example.app）。"
+  exit 1
+fi
+
 command -v "$PYTHON_BIN" >/dev/null 2>&1 || { echo "错误：找不到 python：$PYTHON_BIN"; exit 1; }
 command -v codesign >/dev/null 2>&1 || { echo "错误：找不到 codesign（Xcode Command Line Tools 是否安装？）"; exit 1; }
 test -x /usr/libexec/PlistBuddy || { echo "错误：找不到 /usr/libexec/PlistBuddy"; exit 1; }
@@ -50,6 +61,11 @@ test -x /usr/libexec/PlistBuddy || { echo "错误：找不到 /usr/libexec/Plist
   echo "错误：当前 python 环境中没有 Nuitka。请先安装：pip install nuitka"
   exit 1
 }
+
+echo "使用签名身份：${CERT_IDENTITY:-<未设置>}"
+if [[ -z "${CERT_IDENTITY:-}" ]]; then
+  echo "警告：CERT_IDENTITY_PASTEMD 未设置，将导致 codesign 失败。"
+fi
 
 # 检查证书身份是否存在（只是提示，不强制退出）
 if ! security find-identity -v -p codesigning | grep -Fq "$CERT_IDENTITY"; then
@@ -77,10 +93,24 @@ has_nuitka_opt() {
   "$PYTHON_BIN" -m nuitka --help 2>/dev/null | grep -q -- "$1"
 }
 
+require_nuitka_opt() {
+  if ! has_nuitka_opt "$1"; then
+    echo "错误：当前 Nuitka 不支持 $1，请升级 Nuitka。"
+    exit 1
+  fi
+}
+
 ####################
 # 组装 Nuitka 命令 #
 ####################
 echo "开始运行 Nuitka..."
+
+APPLE_EVENTS_DESC="PasteMD needs permission to identify the frontmost app window (Word, WPS, etc.) so it can insert content into the correct target."
+SCREEN_CAPTURE_DESC="PasteMD needs screen recording access to read window titles (macOS treats window title access as Screen Recording)."
+INPUT_MONITORING_DESC="PasteMD needs permission for global hotkey listening."
+
+require_nuitka_opt "--macos-signed-app-name"
+
 
 # 用数组拼命令，避免空格/引号问题
 NUITKA_CMD=(
@@ -105,20 +135,20 @@ NUITKA_CMD=(
   --include-package=plyer
   --include-package=plyer.platforms.macosx
   --include-module=plyer.platforms.macosx.notification
-  --include-package=pynput
-  --include-package=pynput.keyboard
-  --include-package=pynput._util
-  --include-package=pynput._util.darwin
+  # --include-package=pynput
+  # --include-package=pynput.keyboard
+  # --include-package=pynput._util
+  # --include-package=pynput._util.darwin
 
-  --include-package=Quartz
-  --include-package=AppKit
-  --include-package=Foundation
-  --include-package=objc
-  --include-package=Cocoa
+  # --include-package=Quartz
+  # --include-package=AppKit
+  # --include-package=Foundation
+  # --include-package=objc
+  # --include-package=Cocoa
 
-  --include-package=PIL
-  --include-package=tkinter
-  --include-package=pystray
+  # --include-package=PIL
+  # --include-package=tkinter
+  # --include-package=pystray
 
   # 排除测试相关依赖
   --nofollow-import-to=pytest
@@ -139,9 +169,13 @@ fi
 
 # 可选：让 Nuitka 自己签名（若当前 Nuitka 支持）
 # 你已经确认有 Apple Development 证书身份，这里可以直接用
-if has_nuitka_opt "--macos-sign-identity"; then
-  NUITKA_CMD+=( --macos-sign-identity="$CERT_IDENTITY" )
-fi
+# if has_nuitka_opt "--macos-sign-identity"; then
+#   NUITKA_CMD+=( --macos-sign-identity="$CERT_IDENTITY" )
+# fi
+
+# if has_nuitka_opt "--macos-sign-notarization" ; then
+#   NUITKA_CMD+=( --macos-sign-notarization )
+# fi
 
 # 是否静默
 if [[ "$QUIET" == "1" ]]; then
@@ -165,41 +199,50 @@ fi
 echo "构建完成：$APP_PATH"
 
 #############################################
-# 确保 CFBundleIdentifier（Bundle ID）稳定   #
+# 写入 Info.plist 权限描述（Usage Descriptions）
 #############################################
-# 原因：权限（TCC）非常依赖“应用身份”（bundle id + 签名 + 路径等）
-# 不同 Nuitka 版本/参数可能导致 Info.plist 里的 ID 不一致，强制修正可更稳
+echo "写入 Info.plist 权限描述..."
 
-CURRENT_ID="$(/usr/libexec/PlistBuddy -c "Print :CFBundleIdentifier" "$PLIST_PATH" 2>/dev/null || true)"
+/usr/libexec/PlistBuddy -c "Set :NSAppleEventsUsageDescription $APPLE_EVENTS_DESC" "$PLIST_PATH" 2>/dev/null \
+  || /usr/libexec/PlistBuddy -c "Add :NSAppleEventsUsageDescription string $APPLE_EVENTS_DESC" "$PLIST_PATH"
+/usr/libexec/PlistBuddy -c "Set :NSScreenCaptureUsageDescription $SCREEN_CAPTURE_DESC" "$PLIST_PATH" 2>/dev/null \
+  || /usr/libexec/PlistBuddy -c "Add :NSScreenCaptureUsageDescription string $SCREEN_CAPTURE_DESC" "$PLIST_PATH"
+/usr/libexec/PlistBuddy -c "Set :NSInputMonitoringUsageDescription $INPUT_MONITORING_DESC" "$PLIST_PATH" 2>/dev/null \
+  || /usr/libexec/PlistBuddy -c "Add :NSInputMonitoringUsageDescription string $INPUT_MONITORING_DESC" "$PLIST_PATH"
 
-if [[ "$CURRENT_ID" != "$BUNDLE_ID" ]]; then
-  echo "检测到 CFBundleIdentifier 不一致："
-  echo "  当前：${CURRENT_ID:-<空>}"
-  echo "  期望：$BUNDLE_ID"
-  echo "正在修正 Info.plist..."
-
-  # 如果 key 存在则 Set；不存在则 Add
-  /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier $BUNDLE_ID" "$PLIST_PATH" 2>/dev/null \
-    || /usr/libexec/PlistBuddy -c "Add :CFBundleIdentifier string $BUNDLE_ID" "$PLIST_PATH"
-
-  echo "Info.plist 已修正，接下来需要重新签名（因为改了包内容）。"
+#############################################
+# 复制 InfoPlist.strings 本地化文件          #
+#############################################
+INFO_PLIST_LPROJ_DIR="assets/macos/InfoPlist.strings"
+if [[ -d "$INFO_PLIST_LPROJ_DIR" ]]; then
+  echo "复制 InfoPlist.strings 本地化文件..."
+  mkdir -p "$APP_PATH/Contents/Resources"
+  for lproj in "$INFO_PLIST_LPROJ_DIR"/*.lproj; do
+    [[ -d "$lproj" ]] || continue
+    cp -R "$lproj" "$APP_PATH/Contents/Resources/"
+  done
+else
+  echo "警告：未找到 InfoPlist.strings 目录：$INFO_PLIST_LPROJ_DIR"
 fi
 
+echo "InfoPlist.strings 本地化文件已复制。"
+
 #############################################
-# 添加必要的权限描述（Usage Descriptions）  #
+# 检查 Bundle ID 是否符合预期
 #############################################
-echo "正在添加 macOS 权限描述到 Info.plist..."
-
-# NSAppleEventsUsageDescription - 用于 osascript 获取窗口信息
-/usr/libexec/PlistBuddy -c "Set :NSAppleEventsUsageDescription 'PasteMD 需要此权限来识别当前活动的应用程序窗口（如 Word、WPS 等），以便准确地将内容插入到正确的目标应用中。'" "$PLIST_PATH" 2>/dev/null \
-  || /usr/libexec/PlistBuddy -c "Add :NSAppleEventsUsageDescription string 'PasteMD 需要此权限来识别当前活动的应用程序窗口（如 Word、WPS 等），以便准确地将内容插入到正确的目标应用中。'" "$PLIST_PATH"
-
-# NSSystemAdministrationUsageDescription - 用于系统管理
-/usr/libexec/PlistBuddy -c "Set :NSSystemAdministrationUsageDescription 'PasteMD 需要此权限来识别和控制目标应用程序，以便实现快捷键触发和内容插入功能。'" "$PLIST_PATH" 2>/dev/null \
-  || /usr/libexec/PlistBuddy -c "Add :NSSystemAdministrationUsageDescription string 'PasteMD 需要此权限来识别和控制目标应用程序，以便实现快捷键触发和内容插入功能。'" "$PLIST_PATH"
-
-echo "权限描述已添加。"
-
+echo "检查 Bundle ID..."
+ACTUAL_BUNDLE_ID="$(/usr/libexec/PlistBuddy -c "Print :CFBundleIdentifier" "$PLIST_PATH" 2>/dev/null || true)"
+if [[ -z "$ACTUAL_BUNDLE_ID" ]]; then
+  echo "错误：未在 Info.plist 中找到 CFBundleIdentifier"
+  exit 1
+fi
+if [[ "$ACTUAL_BUNDLE_ID" != "$BUNDLE_ID" ]]; then
+  echo "错误：Bundle ID 不一致"
+  echo "  期望：$BUNDLE_ID"
+  echo "  实际：$ACTUAL_BUNDLE_ID"
+  exit 1
+fi
+echo "Bundle ID 检查通过：$ACTUAL_BUNDLE_ID"
 ####################
 # 重新签名（稳）   #
 ####################
@@ -207,7 +250,7 @@ echo "权限描述已添加。"
 # --deep：对内部嵌套框架/二进制一起签
 # --force：覆盖旧签名
 echo "对 app 进行 codesign 签名：$CERT_IDENTITY"
-codesign --force --deep --sign "$CERT_IDENTITY" "$APP_PATH"
+codesign --force --deep --options runtime --timestamp --sign "$CERT_IDENTITY" "$APP_PATH"
 
 ####################
 # 验证签名信息     #
