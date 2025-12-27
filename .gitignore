@@ -260,3 +260,7 @@ nuitka-crash-report.xml
 **/.DS_Store
 
 *.dmg
+
+docs/node_modules/
+docs/.vitepress/
+*.bak

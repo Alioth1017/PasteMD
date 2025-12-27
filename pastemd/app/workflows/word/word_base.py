@@ -107,13 +107,13 @@ class WordBaseWorkflow(BaseWorkflow, ABC):
         except ClipboardError:
             pass
 
-        if not is_clipboard_empty():
-            return ("markdown", get_clipboard_text(), False, 0)
-
         found, files_data, _ = read_markdown_files_from_clipboard()
         if found:
             merged = merge_markdown_contents(files_data)
             return ("markdown", merged, True, len(files_data))
+        
+        if not is_clipboard_empty():
+            return ("markdown", get_clipboard_text(), False, 0)
 
         raise ClipboardError("剪贴板为空或无有效内容")
 

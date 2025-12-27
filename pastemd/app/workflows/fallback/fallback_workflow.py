@@ -76,6 +76,9 @@ class FallbackWorkflow(BaseWorkflow):
         
         # 检查是否为表格
         markdown_text = get_clipboard_text()
+        found, files_data, _ = read_markdown_files_from_clipboard()
+        if found:
+            markdown_text = merge_markdown_contents(files_data)
         table_data = parse_markdown_table(markdown_text)
         if table_data:
             return "table"
@@ -94,6 +97,9 @@ class FallbackWorkflow(BaseWorkflow):
     def _handle_table(self, action: str):
         """处理表格内容"""
         markdown_text = get_clipboard_text()
+        found, files_data, _ = read_markdown_files_from_clipboard()
+        if found:
+            markdown_text = merge_markdown_contents(files_data)
         table_data = parse_markdown_table(markdown_text)
         
         # 生成输出路径
@@ -127,7 +133,10 @@ class FallbackWorkflow(BaseWorkflow):
             from_html = True
         else:
             # Markdown
-            content = self._read_markdown_content()
+            content = get_clipboard_text()
+            found, files_data, _ = read_markdown_files_from_clipboard()
+            if found:
+                content = merge_markdown_contents(files_data)
             # 预处理
             content = self.markdown_preprocessor.process(content, self.config)
             docx_bytes = self.doc_generator.convert_markdown_to_docx_bytes(
