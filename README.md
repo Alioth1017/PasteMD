@@ -144,7 +144,7 @@
   },
   "move_cursor_to_end": true,
   "Keep_original_formula": false,
-  "language": "zh",
+  "language": "zh-CN",
   "pandoc_filters": []
 }
 ```
@@ -166,7 +166,7 @@
 * **`html_disable_first_para_indent`**： - HTML 富文本转换时是否禁用第一段的特殊格式，统一为正文样式（默认 true）。
 * **`move_cursor_to_end`**：**✨ 新功能** - 插入内容后是否将光标移动到插入内容的末尾（默认 true）。
 * **`Keep_original_formula`**：**✨ 新功能** - 是否保留原始数学公式（LaTeX 代码形式）。
-* `language`：界面语言，`zh` 中文，`en` 英文。
+* `language`：界面语言，`zh-CN` 简体中文，`en-US` 英文。
 * **`pandoc_filters`**：**✨ 新功能** - 自定义 Pandoc Filter 列表。可添加 `.lua` 脚本或可执行文件路径，Filter 将按照列表顺序依次执行。用于扩展 Pandoc 转换功能，如自定义格式处理、特殊语法转换等。默认为空列表。示例：`["%APPDATA%\\npm\\mermaid-filter.cmd"]` 可实现 Mermaid 图表支持。
 
 修改后可在托盘菜单选择 **“重载配置/热键”** 立即生效。
