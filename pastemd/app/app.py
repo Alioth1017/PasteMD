@@ -34,7 +34,7 @@ from ..config.loader import ConfigLoader
 from ..utils.logging import log
 from ..utils.version_checker import VersionChecker
 from ..service.notification.manager import NotificationManager
-from ..i18n import DEFAULT_LANGUAGE, detect_system_language, set_language, t
+from ..i18n import FALLBACK_LANGUAGE, detect_system_language, set_language, t
 from .wiring import Container
 
 
@@ -46,18 +46,21 @@ def initialize_application() -> Container:
     app_state.config = config
     app_state.hotkey_str = config.get("hotkey", "<ctrl>+<shift>+b")
 
-    language_value = config.get("language", DEFAULT_LANGUAGE) or DEFAULT_LANGUAGE
-    language = str(language_value)
-    if language.lower() == DEFAULT_LANGUAGE:
+    language_value = config.get("language")
+    if not language_value:
         detected_language = detect_system_language()
-        if detected_language and detected_language != DEFAULT_LANGUAGE:
+        if detected_language:
             language = detected_language
-            app_state.config["language"] = detected_language
-            try:
-                config_loader.save(app_state.config)
-            except Exception as exc:
-                log(f"Failed to persist auto-detected language: {exc}")
-            log(f"Auto-detected system language: {detected_language}")
+        else:
+            language = FALLBACK_LANGUAGE
+        app_state.config["language"] = language
+        try:
+            config_loader.save(app_state.config)
+        except Exception as exc:
+            log(f"Failed to persist auto-detected language: {exc}")
+        log(f"First launch: detected system language '{language}'")
+    else:
+        language = str(language_value)
     set_language(language)
     
     # 2. 创建依赖注入容器

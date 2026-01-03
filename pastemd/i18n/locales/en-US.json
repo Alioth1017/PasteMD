@@ -1,4 +1,8 @@
 {
+    "_meta": {
+        "code": "en-US",
+        "name": "English"
+    },
     "app.startup.success": "Started successfully and is running in the background.",
     "hotkey.dialog.cancel_button": "Cancel",
     "hotkey.dialog.confirm_message": "Apply the new hotkey?\n\nCurrent: {old_hotkey}\nNew: {new_hotkey}\n\nThe change takes effect immediately.",

@@ -288,7 +288,7 @@ class SettingsDialog:
         ttk.Label(frame, text=t("settings.general.language")).grid(row=language_row, column=0, sticky=tk.W, pady=(15, 5))
         
         # 获取当前语言代码和对应的显示名称
-        current_code = self.current_config.get("language", "zh")
+        current_code = self.current_config.get("language", "en-US")
         current_label = get_language_label(current_code)
         
         self.lang_var = tk.StringVar(value=current_label)
@@ -584,7 +584,7 @@ class SettingsDialog:
             
             # 将显示名称映射回代码
             selected_label = self.lang_var.get()
-            new_config["language"] = self.lang_map.get(selected_label, "zh")
+            new_config["language"] = self.lang_map.get(selected_label, "en-US")
             new_config["save_dir"] = self.save_dir_var.get()
             new_config["keep_file"] = self.keep_file_var.get()
             new_config["notify"] = self.notify_var.get()

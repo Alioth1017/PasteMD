@@ -330,7 +330,7 @@ class TrayMenuManager:
         def on_settings_save():
             """设置保存后的回调"""
             # 刷新菜单以反映可能的配置更改（如语言）
-            set_language(app_state.config.get("language", "zh"))
+            set_language(app_state.config.get("language", "en-US"))
             try:
                 tray_icon = icon or getattr(app_state, "icon", None)
                 if tray_icon is not None:

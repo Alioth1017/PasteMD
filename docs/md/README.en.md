@@ -134,7 +134,7 @@ The first launch creates a `config.json` file in the user data directory (Window
   },
   "move_cursor_to_end": true,
   "Keep_original_formula": false,
-  "language": "zh",
+  "language": "zh-CN",
   "pandoc_request_headers": [
     "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
   ],
@@ -158,7 +158,7 @@ Key fields:
   - `strikethrough_to_del` — convert strikethrough ~~ to `<del>` tags for proper rendering.
 - `move_cursor_to_end` — move the caret to the end of the inserted result.
 - `Keep_original_formula` — keep original math formulas (in LaTeX code form).
-- `language` — UI language, `en` or `zh`.
+- `language` — UI language, `en-US` or `zh-CN`.
 - `pandoc_request_headers` — request headers passed to Pandoc as `--request-header` when fetching remote resources (e.g. images). Example: `["User-Agent: ...", "Referer: https://www.oschina.net/"]`. Set to `[]` to disable request headers.
 - **`pandoc_filters`** — **✨ New feature** - Custom Pandoc Filter list. Add `.lua` scripts or executable file paths; filters execute in list order. Extends Pandoc conversion with custom format processing, special syntax transformation, etc. Default: empty list. Example: `["%APPDATA%\\npm\\mermaid-filter.cmd"]` for Mermaid diagram support.
 

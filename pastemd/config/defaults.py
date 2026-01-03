@@ -68,7 +68,6 @@ DEFAULT_CONFIG: Dict[str, Any] = {
     },
     "move_cursor_to_end": True,
     "Keep_original_formula": False,
-    "language": "zh",
     "enable_latex_replacements": True,
     "fix_single_dollar_block": True,
     # Pandoc 下载远程资源（如图片）时附加的请求头（映射为 --request-header）。

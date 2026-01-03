@@ -252,9 +252,11 @@ pandoc/pandoc-*
 nuitka-crash-report.xml
 /nuitka/*
 
-# AI agent folders
+# AI agent files
 .claude/
 .kilocode/
+AGENTS.md
+CLAUDE.md
 
 # macOS
 **/.DS_Store
