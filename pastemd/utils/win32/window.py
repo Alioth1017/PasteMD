@@ -60,7 +60,49 @@ def get_foreground_window_title() -> str:
         return ""
 
 
-def cleanup_background_wps_processes(ep:int = 0) -> int:
+def get_running_apps() -> list[dict]:
+    """
+    获取所有有可见窗口的运行应用
+    
+    Returns:
+        应用列表，每个元素为 {"name": 进程名(无后缀), "exe_path": 可执行文件路径}
+    """
+    apps = {}
+    
+    def enum_handler(hwnd, _):
+        try:
+            if not win32gui.IsWindowVisible(hwnd):
+                return True
+            
+            # 获取进程 ID
+            _, pid = win32process.GetWindowThreadProcessId(hwnd)
+            
+            # 获取进程信息
+            proc = psutil.Process(pid)
+            exe_path = proc.exe()
+            name = proc.name().replace(".exe", "")
+            
+            # 避免重复
+            if name not in apps:
+                apps[name] = {
+                    "name": name,
+                    "exe_path": exe_path,
+                }
+        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+            pass
+        except Exception as e:
+            log(f"Error enumerating app: {e}")
+        return True
+    
+    try:
+        win32gui.EnumWindows(enum_handler, None)
+    except Exception as e:
+        log(f"Failed to enumerate windows: {e}")
+    
+    return list(apps.values())
+
+
+def cleanup_background_wps_processes(ep: int = 0) -> int:
     """
     清理后台的 WPS 进程，保留前台的 WPS 进程
     

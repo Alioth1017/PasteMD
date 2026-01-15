@@ -28,7 +28,7 @@ def detect_active_app() -> str:
     检测当前活跃的插入目标应用
 
     Returns:
-        "word", "wps", "excel", "wps_excel" 或空字符串
+        "word", "wps", "excel", "wps_excel" 或前台应用名称（用于可扩展工作流匹配）
     """
     # 直接使用 osascript，它在热键场景下更准确
     app = _get_frontmost_app_via_osascript()
@@ -37,8 +37,9 @@ def detect_active_app() -> str:
         return ""
 
     name = (app.get("name") or "").lower()
+    original_name = app.get("name") or ""
 
-    log(f"前台应用: name={app.get('name')}")
+    log(f"前台应用: name={original_name}")
 
     # ✅ Microsoft Word：name 可能是 "Word" 或 "Microsoft Word"
     if name in ("word", "microsoft word"):
@@ -52,7 +53,8 @@ def detect_active_app() -> str:
     if "wps" in name or "kingsoft" in name:
         return detect_wps_type()
 
-    return ""
+    # 兜底：返回原始应用名称（用于可扩展工作流匹配）
+    return original_name
 
 
 def detect_wps_type() -> str:

@@ -50,6 +50,10 @@ def get_default_save_dir() -> str:
         return os.path.expanduser("~/Documents/pastemd")
 
 
+# 保留应用列表（不允许添加到可扩展工作流）
+RESERVED_APPS = {"word", "wps", "excel", "wps_excel"}
+
+
 DEFAULT_CONFIG: Dict[str, Any] = {
     "hotkey": "<ctrl>+<shift>+b",
     "pandoc_path": find_pandoc(),
@@ -75,4 +79,13 @@ DEFAULT_CONFIG: Dict[str, Any] = {
         "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     ],
     "pandoc_filters": [],
+    # 可扩展工作流配置
+    "extensible_workflows": {
+        "html_md": {
+            "enabled": True,  # 默认开启
+            "apps": [],  # 格式: [{"name": "Notion", "path": "/Applications/Notion.app"}, ...]
+            "keep_formula_latex": True,  # True = $...$, False = MathML
+        },
+    },
 }
+

@@ -15,6 +15,7 @@ from ...i18n import t, iter_languages, get_language_label, get_no_app_action_map
 from ...core.state import app_state
 from ...config.loader import ConfigLoader
 from ...config.defaults import DEFAULT_CONFIG
+from .extensions_tab import ExtensionsTab
 
 if is_macos():
     from .permissions import MacOSPermissionsTab
@@ -203,7 +204,16 @@ class SettingsDialog:
         self._create_conversion_tab()
         self._create_advanced_tab()
         self._create_experimental_tab()
-        # 创建选项卡
+        
+        # 扩展选项卡
+        try:
+            self._extensions_tab = ExtensionsTab(self.notebook, self.current_config)
+            self._tab_map["extensions"] = self._extensions_tab.frame
+        except Exception as e:
+            log(f"Failed to create extensions tab: {e}")
+            self._extensions_tab = None
+        
+        # macOS 权限选项卡
         if is_macos():
             try:
                 self._permissions_tab = MacOSPermissionsTab(self.notebook, self.root)
@@ -632,6 +642,12 @@ class SettingsDialog:
             
             # 保存 Pandoc Filters 列表
             new_config["pandoc_filters"] = self.filters_list
+            
+            # 保存扩展选项卡配置
+            if self._extensions_tab:
+                ext_config = new_config.get("extensible_workflows", {})
+                ext_config.update(self._extensions_tab.get_config())
+                new_config["extensible_workflows"] = ext_config
             
             # 保存到文件
             self.config_loader.save(new_config)

@@ -10,7 +10,7 @@ def detect_active_app() -> str:
     检测当前活跃的插入目标应用
     
     Returns:
-        "word", "wps", "excel", "wps_excel" 或空字符串
+        "word", "wps", "excel", "wps_excel" 或前台进程名称（用于可扩展工作流匹配）
     """
     process_name = get_foreground_process_name()
     log(f"前台进程名称: {process_name}")
@@ -25,7 +25,8 @@ def detect_active_app() -> str:
         # 需要进一步区分是文字还是表格
         return detect_wps_type()
     else:
-        return ""
+        # 兜底：返回进程名称（去掉 .exe，用于可扩展工作流匹配）
+        return process_name.replace(".exe", "") if process_name else ""
 
 
 def detect_wps_type() -> str:
