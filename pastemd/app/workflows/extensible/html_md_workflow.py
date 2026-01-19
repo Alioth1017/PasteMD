@@ -11,25 +11,26 @@ from ....utils.clipboard import (
     get_clipboard_html,
     get_clipboard_text,
     is_clipboard_empty,
-    set_clipboard_rich_text,
-    simulate_paste,
-    preserve_clipboard,
 )
 from ....utils.html_analyzer import is_plain_html_fragment
 from ....config.paths import resource_path
 from ....i18n import t
+from ....service.paste import RichTextPastePlacer
 
 class HtmlWorkflow(ExtensibleWorkflow):
     """HTML 粘贴工作流
-    
-    适用于 Notion、语雀等笔记软件：
+
+    适用于 语雀等笔记软件：
     - 读取剪贴板 HTML/Markdown
     - 转换为 Markdown
     - 再转换为纯净 HTML（公式可保持 $...$ 格式）
-    - 同时设置剪贴板的 HTML 和纯文本格式
-    - 模拟粘贴
+    - 使用 RichTextPastePlacer 粘贴
     """
-    
+
+    def __init__(self):
+        super().__init__()
+        self.placer = RichTextPastePlacer()
+
     @property
     def workflow_key(self) -> str:
         return "html"
@@ -61,17 +62,18 @@ class HtmlWorkflow(ExtensibleWorkflow):
                     "Keep_original_formula": keep_formula, 
                 }
             )
-            # 5. 设置剪贴板（HTML + 纯文本 Markdown）
-            with preserve_clipboard():
-                set_clipboard_rich_text(html=html_text, text=md_text)
-                self._log("Set clipboard with HTML and plain text")
-                
-                # 6. 模拟粘贴
-                simulate_paste()
-            
-            # 7. 通知成功
-            self._notify_success(t("workflow.html_md.paste_success"))
-            
+            # 5. 使用粘贴落地器
+            result = self.placer.place(
+                content=md_text,
+                config=self.config,
+                html=html_text,
+            )
+
+            if result.success:
+                self._notify_success(t("workflow.html_md.paste_success"))
+            else:
+                self._notify_error(result.error or t("workflow.generic.failure"))
+
         except ClipboardError as e:
             self._log(f"Clipboard error: {e}")
             self._notify_error(t("workflow.clipboard.read_failed"))

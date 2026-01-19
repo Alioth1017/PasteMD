@@ -7,24 +7,25 @@ from ....utils.clipboard import (
     get_clipboard_html,
     get_clipboard_text,
     is_clipboard_empty,
-    set_clipboard_text,
-    simulate_paste,
-    preserve_clipboard,
 )
 from ....utils.html_analyzer import is_plain_html_fragment
 from ....i18n import t
+from ....service.paste import PlainTextPastePlacer
 
 
 class MdWorkflow(ExtensibleWorkflow):
     """Markdown 粘贴工作流
-    
-    适用于 Obsidian 等原生 Markdown 编辑器：
+
+    适用于原生 Markdown 编辑器：
     - 读取剪贴板 HTML/Markdown
     - 如果是 HTML 则转换为 Markdown
-    - 设置剪贴板纯文本为 Markdown
-    - 模拟粘贴
+    - 使用 PlainTextPastePlacer 粘贴
     """
-    
+
+    def __init__(self):
+        super().__init__()
+        self.placer = PlainTextPastePlacer()
+
     @property
     def workflow_key(self) -> str:
         return "md"
@@ -47,18 +48,18 @@ class MdWorkflow(ExtensibleWorkflow):
             
             # 3. 预处理 Markdown
             md_text = self.markdown_preprocessor.process(md_text, self.config)
-            
-            # 4. 设置剪贴板为纯文本 Markdown
-            with preserve_clipboard():
-                set_clipboard_text(md_text)
-                self._log("Set clipboard with plain text Markdown")
-                
-                # 5. 模拟粘贴
-                simulate_paste()
-            
-            # 6. 通知成功
-            self._notify_success(t("workflow.md.paste_success"))
-            
+
+            # 4. 使用粘贴落地器
+            result = self.placer.place(
+                content=md_text,
+                config=self.config,
+            )
+
+            if result.success:
+                self._notify_success(t("workflow.md.paste_success"))
+            else:
+                self._notify_error(result.error or t("workflow.generic.failure"))
+
         except ClipboardError as e:
             self._log(f"Clipboard error: {e}")
             self._notify_error(t("workflow.clipboard.read_failed"))

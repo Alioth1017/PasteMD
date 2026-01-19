@@ -7,12 +7,10 @@ from ....utils.clipboard import (
     get_clipboard_html,
     get_clipboard_text,
     is_clipboard_empty,
-    set_clipboard_text,
-    simulate_paste,
-    preserve_clipboard,
 )
 from ....utils.html_analyzer import is_plain_html_fragment
 from ....i18n import t
+from ....service.paste import PlainTextPastePlacer
 
 
 class LatexWorkflow(ExtensibleWorkflow):
@@ -21,10 +19,13 @@ class LatexWorkflow(ExtensibleWorkflow):
     适用于 Overleaf 等 LaTeX 编辑器：
     - 读取剪贴板 HTML/Markdown（自动识别）
     - 转换为 LaTeX（去除文档头部）
-    - 设置剪贴板为纯文本 LaTeX
-    - 模拟粘贴
+    - 使用 PlainTextPastePlacer 粘贴
     """
-    
+
+    def __init__(self):
+        super().__init__()
+        self.placer = PlainTextPastePlacer()
+
     @property
     def workflow_key(self) -> str:
         return "latex"
@@ -52,18 +53,18 @@ class LatexWorkflow(ExtensibleWorkflow):
             latex_text = self.doc_generator.convert_markdown_to_latex_text(
                 md_text, self.config
             )
-            
-            # 5. 设置剪贴板为纯文本 LaTeX
-            with preserve_clipboard():
-                set_clipboard_text(latex_text)
-                self._log("Set clipboard with LaTeX text")
-                
-                # 6. 模拟粘贴
-                simulate_paste()
-            
-            # 7. 通知成功
-            self._notify_success(t("workflow.latex.paste_success"))
-            
+
+            # 5. 使用粘贴落地器
+            result = self.placer.place(
+                content=latex_text,
+                config=self.config,
+            )
+
+            if result.success:
+                self._notify_success(t("workflow.latex.paste_success"))
+            else:
+                self._notify_error(result.error or t("workflow.generic.failure"))
+
         except ClipboardError as e:
             self._log(f"Clipboard error: {e}")
             self._notify_error(t("workflow.clipboard.read_failed"))
