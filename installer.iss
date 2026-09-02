@@ -1,11 +1,15 @@
 #define MyAppName "PasteMD"
-#define MyAppVersion "0.1.6.9rc1"
+#ifndef MyAppVersion
+#define MyAppVersion ExecAndGetFirstLine("python", "-c ""from pastemd import __version__; print(__version__)""", SourcePath)
+#endif
 #define MyAppPublisher "RichQAQ"
 #define MyAppExeName "PasteMD.exe"
 ; AppUserModelID 用于 Win11 通知归属与图标
 #define MyAUMID        "RichQAQ.PasteMD"
 ; Nuitka 构建目录
+#ifndef BuildDir
 #define BuildDir       "nuitka\\main.dist"
+#endif
 ; 如果是 onedir，改为发行目录：例如
 ; #define BuildDir     "dist\\PasteMD"
 
@@ -101,4 +105,3 @@ Type: filesandordirs; Name: "{userappdata}\{#MyAppName}"
 [UninstallRun]
 ; 卸载前尝试结束进程
 Filename: "taskkill"; Parameters: "/f /im {#MyAppExeName}"; Flags: runhidden
-

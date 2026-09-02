@@ -16,6 +16,42 @@ from ...i18n import t
 from ...core.state import app_state
 
 
+# Tk 的 ``keysym`` 表示按键产生的字符。在 macOS 上，Option 会改变该字符
+#（例如 Option+V 会产生 ``radical``），而 ``keycode`` 仍然表示实际物理键位。
+# 下表使用的也是全局热键后端所采用的 macOS 虚拟键码。
+_MACOS_KEYCODE_TO_NAME = {
+    0x00: "a", 0x01: "s", 0x02: "d", 0x03: "f", 0x04: "h",
+    0x05: "g", 0x06: "z", 0x07: "x", 0x08: "c", 0x09: "v",
+    0x0B: "b", 0x0C: "q", 0x0D: "w", 0x0E: "e", 0x0F: "r",
+    0x10: "y", 0x11: "t", 0x12: "1", 0x13: "2", 0x14: "3",
+    0x15: "4", 0x16: "6", 0x17: "5", 0x18: "=", 0x19: "9",
+    0x1A: "7", 0x1B: "-", 0x1C: "8", 0x1D: "0", 0x1E: "]",
+    0x1F: "o", 0x20: "u", 0x21: "[", 0x22: "i", 0x23: "p",
+    0x25: "l", 0x26: "j", 0x27: "'", 0x28: "k", 0x29: ";",
+    0x2A: "\\", 0x2B: ",", 0x2C: "/", 0x2D: "n", 0x2E: "m",
+    0x2F: ".", 0x32: "`",
+    0x36: "cmd", 0x37: "cmd",
+    0x38: "shift", 0x3C: "shift",
+    0x3A: "alt", 0x3D: "alt",
+    0x3B: "ctrl", 0x3E: "ctrl",
+}
+
+
+def _normalize_macos_tk_keycode(event: tk.Event) -> Optional[int]:
+    """从 Tk 事件中提取 macOS 虚拟键码，并兼容 Tk 的打包整数格式。"""
+    try:
+        raw_keycode = int(event.keycode)
+    except (AttributeError, TypeError, ValueError):
+        return None
+
+    if 0 <= raw_keycode <= 0xFF:
+        return raw_keycode
+
+    # 部分 Tk/macOS 版本会把虚拟键码放在 32 位整数的最高字节中，
+    # 例如 V 键可能显示为 0x09c025ca，而不是直接显示为 0x09。
+    return (raw_keycode >> 24) & 0xFF
+
+
 class HotkeyDialog:
     """热键设置对话框"""
     
@@ -44,9 +80,33 @@ class HotkeyDialog:
             self.root = tk.Toplevel(app_state.root)
         else:
             self.root = tk.Tk()
-            
+
+        # 创建后先隐藏：定位/居中全程在后台完成，避免首帧落在默认位置（左上角）产生闪烁。
+        # 配对的 deiconify() 在 show() 中执行，窗口首帧即落在最终位置。
+        self.root.withdraw()
+
+        # 适配高分屏和屏幕尺寸
+        scale = get_dpi_scale()
+
+        # 在 macOS 上根据屏幕大小自适应
+        if not is_windows():
+            # 获取屏幕尺寸
+            screen_width = self.root.winfo_screenwidth()
+            screen_height = self.root.winfo_screenheight()
+
+            # 窗口大小设置为屏幕的合适比例，但不超过 500x350，不小于 400x250
+            width = max(400, min(500, int(screen_width * 0.35)))
+            height = max(250, min(350, int(screen_height * 0.3)))
+        else:
+            # Windows 保持原来的固定大小
+            width = int(450 * scale)
+            height = int(300 * scale)
+
+        # 一次性写入完整 geometry（尺寸 + 居中位置），须在下方 iconbitmap 之前
+        self._set_centered_geometry(width, height)
+
         self.root.title(t("hotkey.dialog.title"))
-        
+
         # 设置图标（仅 Windows）
         if is_windows():
             try:
@@ -55,26 +115,7 @@ class HotkeyDialog:
                     self.root.iconbitmap(icon_path)
             except Exception as e:
                 log(f"Failed to set hotkey dialog icon: {e}")
-        
-        # 适配高分屏和屏幕尺寸
-        scale = get_dpi_scale()
-        
-        # 在 macOS 上根据屏幕大小自适应
-        if not is_windows():
-            # 获取屏幕尺寸
-            screen_width = self.root.winfo_screenwidth()
-            screen_height = self.root.winfo_screenheight()
-            
-            # 窗口大小设置为屏幕的合适比例，但不超过 500x350，不小于 400x250
-            width = max(400, min(500, int(screen_width * 0.35)))
-            height = max(250, min(350, int(screen_height * 0.3)))
-        else:
-            # Windows 保持原来的固定大小
-            width = int(450 * scale)
-            height = int(300 * scale)
-        
-        self.root.geometry(f"{width}x{height}")
-        
+
         # macOS 上允许调整大小，Windows 保持不可调整
         if not is_windows():
             self.root.resizable(True, True)
@@ -82,13 +123,10 @@ class HotkeyDialog:
             self.root.minsize(400, 250)
         else:
             self.root.resizable(False, False)
-        
+
         # 设置关闭窗口时的处理
         self.root.protocol("WM_DELETE_WINDOW", self._on_close)
-        
-        # 窗口居中
-        self._center_window()
-        
+
         # 创建UI组件
         self._create_widgets()
         
@@ -122,6 +160,15 @@ class HotkeyDialog:
 
     @staticmethod
     def _tk_key_to_name(event: tk.Event) -> Optional[str]:
+        if is_macos():
+            # 优先使用不受键盘布局和 Option 字符转换影响的虚拟键码。
+            # 如果使用 keysym，Option+字母会被记录为生成的特殊符号，
+            # 而不是全局热键监听器所需要的字母键。
+            keycode = _normalize_macos_tk_keycode(event)
+            physical_name = _MACOS_KEYCODE_TO_NAME.get(keycode)
+            if physical_name:
+                return physical_name
+
         keysym = getattr(event, "keysym", "") or ""
         lower = keysym.lower()
 
@@ -255,14 +302,16 @@ class HotkeyDialog:
         except Exception as e:
             log(f"Failed to restore hotkey dialog: {e}")
     
-    def _center_window(self):
-        """将窗口居中显示"""
-        self.root.update_idletasks()
-        width = self.root.winfo_width()
-        height = self.root.winfo_height()
-        x = (self.root.winfo_screenwidth() // 2) - (width // 2)
-        y = (self.root.winfo_screenheight() // 2) - (height // 2)
-        self.root.geometry(f'{width}x{height}+{x}+{y}')
+    def _set_centered_geometry(self, width: int, height: int) -> None:
+        """一次性写入完整 geometry（尺寸 + 居中位置）。
+
+        必须在 iconbitmap() 之前调用：Windows Tk 中 withdrawn 窗口设置图标后，
+        后续的 geometry() 请求会丢失（实测行为）；先写 geometry 则不受影响。
+        位置由屏幕尺寸与目标尺寸直接计算，不依赖此时不可靠的 winfo_width()。
+        """
+        x = (self.root.winfo_screenwidth() - width) // 2
+        y = (self.root.winfo_screenheight() - height) // 2
+        self.root.geometry(f"{width}x{height}+{x}+{y}")
     
     def _create_widgets(self):
         """创建UI组件"""

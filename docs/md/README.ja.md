@@ -13,6 +13,9 @@
   <a href="../../LICENSE">
     <img src="https://img.shields.io/github/license/RICHQAQ/PasteMD?style=flat-square" alt="License">
   </a>
+  <a href="https://gitcode.com/RICHQAQ/PasteMD">
+    <img src="https://gitcode.com/RICHQAQ/PasteMD/star/badge.svg" alt="AtomGitStars">
+  </a>
   <img src="https://img.shields.io/badge/Python-3.12%2B-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python 3.12+">
   <img src="https://img.shields.io/badge/Platform-Windows%20%7C%20Word%20%7C%20WPS-5e8d36?style=flat-square&logo=windows&logoColor=white" alt="Platform">
 </p>
@@ -27,7 +30,25 @@
 
 <p align="center">
 <a href="https://hellogithub.com/repository/RICHQAQ/PasteMD" target="_blank"><img src="https://abroad.hellogithub.com/v1/widgets/recommend.svg?rid=7dfb1883330d441f9264d8e8945c75e2&claim_uid=RvDOqI1Satiwzh4&theme=neutral" alt="Featured｜HelloGitHub" style="width: 250px; height: 54px;" width="250" height="54" /></a>
+<a href="https://trendshift.io/repositories/15640?utm_source=trendshift-badge&amp;utm_medium=badge&amp;utm_campaign=badge-trendshift-15640" target="_blank" rel="noopener noreferrer"><img src="https://trendshift.io/api/badge/trendshift/repositories/15640/daily?language=Python" alt="RICHQAQ%2FPasteMD | Trendshift" width="250" height="55" /></a>
 </p>
+
+<!-- sponsor-ad:start -->
+## ❤️ スポンサー
+<table>
+<tr>
+<td width="200" align="center" valign="middle"><a href="https://www.atlascloud.ai/?utm_source=github&utm_medium=link&utm_campaign=pasteMD"><img src="../../docs/img/AtlasCloud_logo.svg" alt="Atlas Cloud" width="180"></a></td>
+<td valign="middle">
+  <a href="https://www.atlascloud.ai/?utm_source=github&utm_medium=link&utm_campaign=pasteMD">Atlas Cloud</a> は、開発者が単一の AI API で動画生成、画像生成、LLM API にアクセスできるフルモーダル AI 推論プラットフォームです。複数ベンダーとの連携を管理する代わりに、一度接続するだけで、あらゆるモダリティに対応した 300 以上の厳選モデルを統合的に利用できます。<br>
+  Atlas Cloud の新しい Coding Plan プロモーションで、より予算にやさしい API アクセスを確認できます：<a href="https://www.atlascloud.ai/console/coding-plan">https://www.atlascloud.ai/console/coding-plan</a></td>
+</tr>
+<tr>
+<td width="200" align="center" valign="middle"><a href="https://go.apimart.ai/gh-pastemd"><img src="../../docs/img/APIMart.png" alt="APIMart" width="180"></a></td>
+<td valign="middle">
+  本プロジェクトをご支援いただいた APIMart に感謝します！APIMart は、AI 画像・動画生成に特化した低価格 API プラットフォームです。GPT-Image-2 は 1 枚 $0.006 からで、1 ドルで 160 枚以上の画像を生成できます。画像と動画の両方を 1 つの非同期 API で利用可能です。タスクを送信して ID を取得し、ポーリングまたはコールバックで結果を取得します。数万枚規模の画像もタイムアウトなしで一括処理でき、コードを変更せずにモデルを切り替えられます。従量課金制で月額料金は不要です。<a href="https://go.apimart.ai/gh-pastemd">こちらの登録リンク</a>から登録して、すぐにご利用いただけます。</td>
+</tr>
+</table>
+<!-- sponsor-ad:end -->
 
 > 論文やレポートを書いていると、ChatGPT / DeepSeek などの AI サイトからコピーした数式が Word で文字化けしませんか？Markdown の表を Excel に貼り付けると崩れませんか？**PasteMD はその問題を解決するためのツールです。**
 > 
@@ -439,7 +460,7 @@ Star してくれたみなさん、いつもありがとうございます！も
      alt="likeyou"
      width="150">
 
-[![Star History Chart](https://api.star-history.com/svg?repos=RICHQAQ/PasteMD&type=date&legend=top-left)](https://www.star-history.com/#RICHQAQ/PasteMD&type=date&legend=top-left)
+[![Star History Chart](https://star-history.dera.page/svg?repos=RICHQAQ/PasteMD&type=date&legend=top-left)](https://star-history.dera.page/#RICHQAQ/PasteMD&type=date&legend=top-left)
 
 ## 🍵 サポート/投げ銭
 
